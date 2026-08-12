@@ -42,8 +42,8 @@ export async function POST(request: Request) {
     if (!rateLimit.allowed) {
       return NextResponse.json(
         { error: "Limite de disparos administrativos atingido." },
-        { status: 429 },
         {
+          status: 429,
           headers: {
             "Retry-After": String(rateLimit.resetIn),
           },

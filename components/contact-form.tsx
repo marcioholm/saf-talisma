@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { verifyTurnstile } from "@/lib/turnstile";
 
 interface ContactFormProps {

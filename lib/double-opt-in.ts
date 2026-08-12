@@ -3,7 +3,6 @@
 // Ativa inscrição somente após confirmação real
 
 import crypto from "crypto";
-import { v4 as uuidv4 } from "uuid";
 
 // Em produção, usar Supabase ou banco de dados persistente
 // Este é um modelo de implementação
@@ -66,7 +65,7 @@ export function verifyConfirmationToken(
   }
   
   // Verificar expiração (24 horas)
-  const // Em produção, comparar com data de criação armazenada
+  // Em produção, comparar com data de criação armazenada
   // Por enquanto, aceitar se hash corresponde
   return { valid: true };
 }

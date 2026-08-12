@@ -6,8 +6,7 @@ export const metadata: Metadata = {
   description: "Site oficial da SAF Talismã. Notícias, jogos, categorias e a história do futsal de Wenceslau Braz.",
   icons: {
     icon: "/favicon.svg",
-   apple: "/logo-saf.svg",
-    apple: "/apple-touch-icon.png",
+    apple: "/logo-saf.svg",
   },
 };
 

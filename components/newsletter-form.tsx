@@ -84,7 +84,7 @@ export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
         setStatus("error");
         return;
       }
-    } else if (!turnsileLoading) {
+    } else if (!turnstileLoading) {
       // Se não houver token e não estiver carregando, avisa
       // (em produção com chave Full Access, isso bloquearia o envio)
     }

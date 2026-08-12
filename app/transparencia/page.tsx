@@ -25,7 +25,7 @@ type RecordRow = {
   mes_referencia: number | null;
   exercicio_fiscal: string | null;
   descricao_resumida: string | null;
-  dados_identificacao: JSONB | null;
+  dados_identificacao: Record<string, unknown> | null;
   link_original: string | null;
   documents: Doc[] | null;
 };
@@ -167,7 +167,7 @@ export default function TransparenciaPage() {
 
           {bimestralFilter !== "all" && (
             <div className="chip-bar">
-              <button className={`chip ${bimestralFilter === "all" ? "active" : ""}`} onClick={() => setBimestralFilter("all")}>
+              <button className="chip" onClick={() => setBimestralFilter("all")}>
                 Todos os bimestres
               </button>
               <button className={`chip ${bimestralFilter === "1º bimestre" ? "active" : ""}`} onClick={() => setBimestralFilter("1º bimestre")}>
@@ -257,7 +257,7 @@ export default function TransparenciaPage() {
                     </div>
                   )}
                   {r.link_original && (
-                    <a href{r.link_original} target="_blank" rel="noreferrer">
+                    <a href={r.link_original} target="_blank" rel="noreferrer">
                       <span>Documento original</span>
                     </a>
                   )}
@@ -338,7 +338,7 @@ export default function TransparenciaPage() {
                   
                   <div className="form-group">
                     <label>Descrição</label>
-                    <textarea name="descricao" value={formData.descricao} onChange={(e) => setFormData({...formData, descricao: e.target.value})} rows={3} required /></textarea>
+                    <textarea name="descricao" value={formData.descricao} onChange={(e) => setFormData({...formData, descricao: e.target.value})} rows={3} required></textarea>
                   </div>
                   
                   <div className="form-group">
@@ -376,12 +376,12 @@ export default function TransparenciaPage() {
                   
                   <div className="form-group">
                     <label>Descrição resumida</label>
-                    <textarea name="descricao_resumida" value={formData.descricao_resumida} onChange={(e) => setFormData({...formData, descricao_resumida: e.target.value})} rows={2} /></textarea>
+                    <textarea name="descricao_resumida" value={formData.descricao_resumida} onChange={(e) => setFormData({...formData, descricao_resumida: e.target.value})} rows={2}></textarea>
                   </div>
                   
                   <div className="form-group">
                     <label>Dados identificadores (JSON)</label>
-                    <textarea name="dados_identificacao" value={formData.dados_identificacao} onChange={(e) => setFormData({...formData, dados_identificacao: e.target.value})} rows={3} placeholder='Ex: {"cpf": "123.456.789-00", "cnpj": "00.000.000/0000-00"} /></textarea>
+                    <textarea name="dados_identificacao" value={formData.dados_identificacao} onChange={(e) => setFormData({...formData, dados_identificacao: e.target.value})} rows={3} placeholder='Ex: {"cpf": "123.456.789-00", "cnpj": "00.000.000/0000-00"}'></textarea>
                   </div>
                   
                   <div className="form-group">

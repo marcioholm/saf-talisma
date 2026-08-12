@@ -27,14 +27,13 @@ export async function POST(req: Request) {
     if (!rateLimit.allowed) {
       return NextResponse.json(
         { error: "Muitas tentativas. Tente novamente em breve." },
-        { status: 429 },
-        // Headers de rate limiting
-        { 
-          headers: { 
+        {
+          status: 429,
+          headers: {
             "Retry-After": String(Math.ceil((rateLimit.resetTime.getTime() - Date.now()) / 1000)),
             "X-RateLimit-Remaining": String(rateLimit.remaining),
             "X-RateLimit-Reset": rateLimit.resetTime.toISOString(),
-          } 
+          },
         }
       );
     }
