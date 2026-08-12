@@ -3,6 +3,15 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import NewsletterForm from "../components/newsletter-form";
+import { supabase } from "../lib/supabase";
+import {
+  mergeDestaque,
+  mergeEvento,
+  DEFAULT_HOME_DESTAQUE,
+  DEFAULT_HOME_EVENTO,
+  type HomeDestaque,
+  type HomeEvento,
+} from "../lib/home-content";
 import "./public.css";
 
 const news = [
@@ -36,9 +45,39 @@ function Mark({ small = false }: { small?: boolean }) {
   );
 }
 
+function Lines({ text, emLast = false }: { text: string; emLast?: boolean }) {
+  const parts = text.split("\n");
+  return (
+    <>
+      {parts.map((line, i) => {
+        const last = i === parts.length - 1;
+        return (
+          <span key={i}>
+            {emLast && last ? <em>{line}</em> : line}
+            {!last && <br />}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("inicio");
+  const [destaque, setDestaque] = useState<HomeDestaque | null>(null);
+  const [evento, setEvento] = useState<HomeEvento | null>(null);
+
+  useEffect(() => {
+    supabase
+      .from("site_settings")
+      .select("chave, valor")
+      .in("chave", ["home_destaque", "home_evento"])
+      .then(({ data }) => {
+        setDestaque(mergeDestaque(data as Array<{ chave: string; valor: unknown }> | null));
+        setEvento(mergeEvento(data as Array<{ chave: string; valor: unknown }> | null));
+      });
+  }, []);
 
   useEffect(() => {
     const sections = ["inicio", "jogos", "noticias", "categorias", "historia", "parceiros"]
@@ -88,26 +127,47 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="score-strip" id="jogos">
-        <div className="shell score-layout">
-          <div className="competition"><span>CONMEBOL</span><strong>SUL-AMERICANO<br />DE CLUBES</strong></div>
-          <div className="score-center">
-            <div className="team"><Mark small /><b>SAF Talismã</b></div>
-            <div className="score"><span>ENCERRADO</span><strong className="is-win">6 <i>×</i> 2</strong><small>29 JUL 2026 · ASSUNÇÃO, PAR</small></div>
-            <div className="team opponent"><div className="opponent-mark">PFC</div><b>Palermo FC</b></div>
+      {(evento ?? DEFAULT_HOME_EVENTO).exibir && (
+        <section className="score-strip" id="jogos">
+          <div className="shell score-layout">
+            <div className="competition">
+              <Lines text={(evento ?? DEFAULT_HOME_EVENTO).competicao} />
+            </div>
+            <div className="score-center">
+              <div className="team"><Mark small /><b>{(evento ?? DEFAULT_HOME_EVENTO).time_casa}</b></div>
+              <div className="score">
+                <span>{(evento ?? DEFAULT_HOME_EVENTO).status_label}</span>
+                <strong className="is-win">{(evento ?? DEFAULT_HOME_EVENTO).placar}</strong>
+                <small>{(evento ?? DEFAULT_HOME_EVENTO).data_local}</small>
+              </div>
+              <div className="team opponent">
+                <div className="opponent-mark">{(evento ?? DEFAULT_HOME_EVENTO).marca_fora}</div>
+                <b>{(evento ?? DEFAULT_HOME_EVENTO).time_fora}</b>
+              </div>
+            </div>
+            <a href={(evento ?? DEFAULT_HOME_EVENTO).link_url} className="match-link">
+              {(evento ?? DEFAULT_HOME_EVENTO).link_texto} <span>→</span>
+            </a>
           </div>
-          <a href="#noticias" className="match-link">Ver detalhes <span>→</span></a>
-        </div>
-      </section>
+        </section>
+      )}
 
       <section className="hero" id="inicio">
         <div className="hero-lines" />
         <div className="shell hero-inner">
-          <div className="eyebrow"><span /> ORGULHO DO NORTE PIONEIRO</div>
-          <h1>Mais que futsal.<br /><em>Um movimento.</em></h1>
-          <p>Formando atletas, fortalecendo valores e levando o nome de Wenceslau Braz cada vez mais longe.</p>
-          <div className="hero-actions"><a href="#historia" className="button button-green">Conheça nossa história</a><a href="#noticias" className="text-link">Últimas notícias <span>→</span></a></div>
-          <div className="hero-number">17<small>ANOS<br />DE HISTÓRIA</small></div>
+          <div className="eyebrow"><span /> {(destaque ?? DEFAULT_HOME_DESTAQUE).eyebrow}</div>
+          <h1><Lines text={(destaque ?? DEFAULT_HOME_DESTAQUE).titulo} emLast /></h1>
+          <p>{(destaque ?? DEFAULT_HOME_DESTAQUE).subtitulo}</p>
+          <div className="hero-actions">
+            <a href={(destaque ?? DEFAULT_HOME_DESTAQUE).botao_link} className="button button-green">
+              {(destaque ?? DEFAULT_HOME_DESTAQUE).botao_texto}
+            </a>
+            <a href="#noticias" className="text-link">Últimas notícias <span>→</span></a>
+          </div>
+          <div className="hero-number">
+            {(destaque ?? DEFAULT_HOME_DESTAQUE).numero}
+            <small><Lines text={(destaque ?? DEFAULT_HOME_DESTAQUE).numero_rotulo} /></small>
+          </div>
         </div>
         <div className="hero-ball" aria-hidden="true"><i /><i /><i /><i /><i /></div>
       </section>
