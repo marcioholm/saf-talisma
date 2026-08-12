@@ -9,6 +9,7 @@ export type EmailMessage = {
   subject: string;
   html: string;
   replyTo?: string;
+  from?: string;
 };
 
 export function emailFrom(): string {
@@ -39,13 +40,12 @@ async function resend(path: string, body: unknown): Promise<{ id?: string }> {
 }
 
 export async function sendEmail(msg: EmailMessage): Promise<void> {
-  await resend("", { from: emailFrom(), ...msg });
+  await resend("", { from: msg.from || emailFrom(), ...msg });
 }
 
 export async function sendBatchEmails(messages: EmailMessage[]): Promise<void> {
   if (!messages.length) return;
-  const from = emailFrom();
-  await resend("/batch", messages.map((m) => ({ from, ...m })));
+  await resend("/batch", messages.map((m) => ({ from: m.from || emailFrom(), ...m })));
 }
 
 export function escapeHtml(value: string): string {

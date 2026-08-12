@@ -27,6 +27,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, skipped: "not_published" });
     }
 
+    const { data: emailConfigRow } = await admin
+      .from("site_settings")
+      .select("valor")
+      .eq("chave", "email_config")
+      .maybeSingle();
+    const emailConfig =
+      emailConfigRow?.valor && typeof emailConfigRow.valor === "object"
+        ? (emailConfigRow.valor as { from?: string })
+        : {};
+    const from = emailConfig.from || process.env.EMAIL_FROM || undefined;
+
     const { data: subscribers } = await admin
       .from("newsletter_subscribers")
       .select("email")
@@ -58,6 +69,7 @@ export async function POST(req: Request) {
       to,
       subject: `Nova notícia: ${post.titulo}`,
       html,
+      ...(from ? { from } : {}),
     }));
 
     let sent = 0;

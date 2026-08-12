@@ -6,6 +6,7 @@ import { getAdminClient } from "../../../lib/admin-client";
 type Settings = {
   contatos: { email: string; telefone: string; endereco: string; cidade: string; estado: string };
   redes_sociais: { instagram: string; facebook: string; whatsapp: string; youtube: string };
+  email_config: { from: string };
 };
 
 type Stats = { id: string; atletas_ativos: number; categorias: number; anos_atuacao: number; premios: number };
@@ -13,6 +14,7 @@ type Stats = { id: string; atletas_ativos: number; categorias: number; anos_atua
 const EMPTY_SETTINGS: Settings = {
   contatos: { email: "", telefone: "", endereco: "", cidade: "", estado: "" },
   redes_sociais: { instagram: "", facebook: "", whatsapp: "", youtube: "" },
+  email_config: { from: "" },
 };
 
 export default function AdminConfiguracoes() {
@@ -27,10 +29,12 @@ export default function AdminConfiguracoes() {
     (async () => {
       const { data: contatos } = await client.from("site_settings").select("valor").eq("chave", "contatos").maybeSingle();
       const { data: redes } = await client.from("site_settings").select("valor").eq("chave", "redes_sociais").maybeSingle();
+      const { data: emailConfig } = await client.from("site_settings").select("valor").eq("chave", "email_config").maybeSingle();
       const { data: stats } = await client.from("estatisticas").select("*").limit(1).maybeSingle();
       setSettings({
         contatos: { ...EMPTY_SETTINGS.contatos, ...(contatos?.valor as object) },
         redes_sociais: { ...EMPTY_SETTINGS.redes_sociais, ...(redes?.valor as object) },
+        email_config: { ...EMPTY_SETTINGS.email_config, ...(emailConfig?.valor as object) },
       });
       setStats(stats as Stats | null);
       setLoading(false);
@@ -42,6 +46,9 @@ export default function AdminConfiguracoes() {
   }
   function setRede<K extends keyof Settings["redes_sociais"]>(key: K, value: string) {
     setSettings((s) => ({ ...s, redes_sociais: { ...s.redes_sociais, [key]: value } }));
+  }
+  function setEmailCfg<K extends keyof Settings["email_config"]>(key: K, value: string) {
+    setSettings((s) => ({ ...s, email_config: { ...s.email_config, [key]: value } }));
   }
   function setStat<K extends keyof Stats>(key: K, value: number) {
     setStats((s) => (s ? { ...s, [key]: value } : s));
@@ -59,6 +66,8 @@ export default function AdminConfiguracoes() {
       if (err1.error) throw new Error(err1.error.message);
       const err2 = await client.from("site_settings").upsert({ chave: "redes_sociais", valor: settings.redes_sociais, updated_by: userId });
       if (err2.error) throw new Error(err2.error.message);
+      const err4 = await client.from("site_settings").upsert({ chave: "email_config", valor: settings.email_config, updated_by: userId });
+      if (err4.error) throw new Error(err4.error.message);
       if (stats) {
         const err3 = await client.from("estatisticas").update({ atletas_ativos: stats.atletas_ativos, categorias: stats.categorias, anos_atuacao: stats.anos_atuacao, premios: stats.premios }).eq("id", stats.id);
         if (err3.error) throw new Error(err3.error.message);
@@ -86,8 +95,10 @@ export default function AdminConfiguracoes() {
       <h2 className="admin-section-title">Contatos</h2>
       <div className="admin-form-grid">
         <div className="field">
-          <label htmlFor="email">Email</label>
-          <input id="email" type="email" value={settings.contatos.email} onChange={(e) => setContato("email", e.target.value)} />
+          <label htmlFor="email">
+            E-mail de contato <small>(recebe as solicitações de parceria)</small>
+          </label>
+          <input id="email" type="email" value={settings.contatos.email} onChange={(e) => setContato("email", e.target.value)} placeholder="contato@saftalisma.com.br" />
         </div>
         <div className="field">
           <label htmlFor="telefone">Telefone / WhatsApp</label>
@@ -107,8 +118,27 @@ export default function AdminConfiguracoes() {
         </div>
       </div>
 
-      <h2 className="admin-section-title">Redes sociais</h2>
+      <h2 className="admin-section-title">E-mail (Resend)</h2>
       <div className="admin-form-grid">
+        <div className="field field-full">
+          <label htmlFor="email-from">
+            Remetente dos e-mails <small>(domínio verificado no Resend)</small>
+          </label>
+          <input
+            id="email-from"
+            type="email"
+            value={settings.email_config.from}
+            onChange={(e) => setEmailCfg("from", e.target.value)}
+            placeholder="contato@saftalisma.com.br"
+          />
+          <p className="hint">
+            Usado como remetente (from) no envio de contato e newsletter. Enquanto o domínio não for
+            verificado, fica <code>onboarding@resend.dev</code>.
+          </p>
+        </div>
+      </div>
+
+      <h2 className="admin-section-title">Redes sociais</h2>      <div className="admin-form-grid">
         <div className="field">
           <label htmlFor="instagram">Instagram</label>
           <input id="instagram" value={settings.redes_sociais.instagram} onChange={(e) => setRede("instagram", e.target.value)} placeholder="https://instagram.com/…" />

@@ -43,6 +43,17 @@ export async function POST(req: Request) {
         : {};
     const to = contatos.email || process.env.CONTACT_TO || "contato@saftalisma.com.br";
 
+    const { data: emailConfigRow } = await admin
+      .from("site_settings")
+      .select("valor")
+      .eq("chave", "email_config")
+      .maybeSingle();
+    const emailConfig =
+      emailConfigRow?.valor && typeof emailConfigRow.valor === "object"
+        ? (emailConfigRow.valor as { from?: string })
+        : {};
+    const from = emailConfig.from || process.env.EMAIL_FROM || undefined;
+
     const lines = [
       ["Nome", nome],
       ["Empresa", empresa],
@@ -70,6 +81,7 @@ export async function POST(req: Request) {
       replyTo: email,
       subject: `Novo contato: ${nome}${empresa ? ` — ${empresa}` : ""}`,
       html,
+      ...(from ? { from } : {}),
     });
 
     return NextResponse.json({ ok: true });
