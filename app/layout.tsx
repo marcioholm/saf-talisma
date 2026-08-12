@@ -4,7 +4,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "SAF Talismã | O clube do Norte Pioneiro",
   description: "Site oficial da SAF Talismã. Notícias, jogos, categorias e a história do futsal de Wenceslau Braz.",
-  other: { "codex-preview": "development" },
+  icons: {
+    icon: "/favicon.svg",
+   apple: "/logo-saf.svg",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -17,6 +21,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        {/* Favicon e logo */}
+        <link rel="icon" href="/favicon.svg" />
+        <link rel="apple-touch-icon" href="/logo-saf.svg" />
       </head>
       <body>{children}</body>
     </html>
