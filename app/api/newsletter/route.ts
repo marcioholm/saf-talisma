@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
     // Rate limiting: newsletter = 3 tentativas por IP/e-mail em 15 minutos
     const forwardedFor = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
-    const ip = forwardedFor.split(","")[0].trim();
+    const ip = forwardedFor.split(",")[0].trim();
     
     const rateLimit = checkRateLimit("newsletter", ip, email);
 

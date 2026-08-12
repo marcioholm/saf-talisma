@@ -34,7 +34,7 @@ export async function POST(request: Request) {
 
     // Rate limiting administrativo: verificar limite por IP/admin
     const forwardedFor = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip");
-    const ip = forwardedFor ? forwardedFor.split(","")[0].trim() : "unknown";
+    const ip = forwardedFor ? forwardedFor.split(",")[0].trim() : "unknown";
     
     // Para notify: limite administrativo e idempotência por notícia
     const rateLimit = checkRateLimit("notify", ip);

@@ -67,7 +67,7 @@ interface BimestralFormData {
   exercicio_fiscal: string;
   periodo_bimestral: "1º bimestre" | "2º bimestre" | "1-2º bimestres";
   descricao_resumida: string;
-  dados_identificacao: string;  -- JSON string
+  dados_identificacao: string; // JSON string
   link_original: string;
   status: "published" | "draft";
 }
@@ -162,7 +162,7 @@ export default function TransparenciaPage() {
                   {y}
                 </button>
               ))}
-            div>
+            </div>
           )}
 
           {bimestralFilter !== "all" && (

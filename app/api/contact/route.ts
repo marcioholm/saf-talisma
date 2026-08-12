@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 
     // Rate limiting: contact = 5 tentativas por IP em 15 minutos
     const forwardedFor = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip");
-    const ip = forwardedFor ? forwardedFor.split(","")[0].trim() : "unknown";
+    const ip = forwardedFor ? forwardedFor.split(",")[0].trim() : "unknown";
     const rateLimit = checkRateLimit("contact", ip);
 
     if (!rateLimit.allowed) {

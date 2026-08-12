@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { verifyTurnstile } from "@/lib/turnstile";
 
 interface NewsletterFormProps {
@@ -208,3 +208,4 @@ export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
     </form>
   );
 }
+export default NewsletterForm;
