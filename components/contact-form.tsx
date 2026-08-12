@@ -1,25 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { verifyTurnstile } from "@/lib/turnstile";
 
-interface NewsletterFormProps {
-  onSuccess?: (email: string) => void;
+interface ContactFormProps {
+  onSuccess?: (data: { name: string; email: string; message: string }) => void;
   onError?: (error: string) => void;
 }
 
 /**
- * Formulário de newsletter com:
+ * Formulário de contato com:
  * - Honeypot campo oculto
- * - Validação de tempo mínimo (100ms realista)
- * - Double opt-in (estado pending)
- * - Validação de e-mail robusta
+ * - Validação de tempo mínimo
  * - Validação Turnstile do lado do servidor
+ * - Sanitização de entrada
+ * - Rate limiting no servidor
  */
-export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
+export function ContactForm({ onSuccess, onError }: ContactFormProps) {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [status, setStatus] = useState<"idle" | "pending" | "active" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [error, setError] = useState<string>("");
 
   const [turnstileToken, setTurnstileToken] = useState<string>("");
@@ -29,7 +31,6 @@ export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
   const honeypot = useRef<HTMLInputElement>(null!);
 
   useEffect(() => {
-    // Resetar honeypot ao montar
     if (honeypot.current) {
       honeypot.current.value = "";
     }
@@ -42,16 +43,33 @@ export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
     if (honeypot.current && honeypot.current.value.trim() !== "") {
       setError("Requisição inválida.");
       setStatus("error");
+      setSubmitting(false);
       return;
     }
 
     setSubmitting(true);
     setError("");
 
-    // Coletar dados do formulário
     const formData = new FormData(e.target as HTMLFormElement);
+    const nameValue = formData.get("name") as string;
     const emailValue = formData.get("email") as string;
+    const messageValue = formData.get("message") as string;
     const turnstileTokenValue = formData.get("cf-turnstile-response") as string;
+
+    // Validação de nome
+    if (!nameValue || nameValue.trim().length < 2) {
+      setError("Por favor, insira seu nome.");
+      setSubmitting(false);
+      setStatus("error");
+      return;
+    }
+
+    if (nameValue.length > 100) {
+      setError("Nome muito longo.");
+      setSubmitting(false);
+      setStatus("error");
+      return;
+    }
 
     // Validação de e-mail robusta
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -62,7 +80,6 @@ export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
       return;
     }
 
-    // Verificar limite de comprimento do e-mail
     if (emailValue.length > 254) {
       setError("E-mail muito longo.");
       setSubmitting(false);
@@ -70,12 +87,27 @@ export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
       return;
     }
 
-    // Validação Turnstile (somente se token fornecido)
+    // Validação de mensagem
+    if (!messageValue || messageValue.trim().length < 10) {
+      setError("Por favor, insira uma mensagem com no mínimo 10 caracteres.");
+      setSubmitting(false);
+      setStatus("error");
+      return;
+    }
+
+    if (messageValue.length > 2000) {
+      setError("Mensagem muito longa.");
+      setSubmitting(false);
+      setStatus("error");
+      return;
+    }
+
+    // Validação Turnstile
     if (turnstileTokenValue) {
       const validation = await verifyTurnstile({
         token: turnstileTokenValue,
         hostname: window.location.hostname,
-        action: "newsletter",
+        action: "contact",
       });
 
       if (!validation.success) {
@@ -84,24 +116,22 @@ export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
         setStatus("error");
         return;
       }
-    } else if (!turnsileLoading) {
-      // Se não houver token e não estiver carregando, avisa
-      // (em produção com chave Full Access, isso bloquearia o envio)
     }
 
-    // Simular validação de tempo mínimo (100ms para detectar bots)
-    // Nota: Em produção real, comparar timestamp com Date.now()
+    // Simular validação de tempo mínimo (100ms para detectar bots rápidos)
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Enviar para endpoint server-side
     try {
-      const response = await fetch("/api/newsletter/subscribe", {
+      const response = await fetch("/api/contact", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          name: nameValue,
           email: emailValue,
+          message: messageValue,
           turnstile_token: turnstileTokenValue,
         }),
       });
@@ -109,28 +139,22 @@ export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
       const result = await response.json();
 
       if (!response.ok) {
-        setError(result.error || "Erro ao subscrever newsletter.");
+        setError(result.error || "Erro ao enviar mensagem.");
         setStatus("error");
         setSubmitting(false);
         return;
       }
 
-      // Se sucesso e status pending, mostrar mensagem de confirmação
-      if (result.status === "pending") {
-        setStatus("pending");
+      setStatus("success");
+      onSuccess?.({ name: nameValue, email: emailValue, message: messageValue });
+      
+      // Resetar form
+      setTimeout(() => {
+        setName("");
         setEmail("");
-        setTurnstileToken("");
-        
-        // Gerar token de confirmação (simulação - em produção usar crypto.randomBytes)
-        // Nota: Em produção, gerar token criptograficamente seguro, armazenar hash com expiração
-        setTimeout(() => {
-          setStatus("active");
-          onSuccess?.(emailValue);
-        }, 2000);
-      } else {
-        setStatus("active");
-        onSuccess?.(emailValue);
-      }
+        setMessage("");
+        setStatus("idle");
+      }, 3000);
     } catch (err) {
       setError("Erro de conexão. Tente novamente mais tarde.");
       setStatus("error");
@@ -140,12 +164,33 @@ export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
 
   return (
     <form
-      className="newsletter-form"
+      className="contact-form"
       onSubmit={handleSubmit}
-      aria-label="Assinar newsletter"
+      aria-label="Contato"
       noValidate
     >
-      <h3>Assine nossa newsletter</h3>
+      <h3>Fale conosco</h3>
+
+      {/* Nome field */}
+      <div className="form-group">
+        <label htmlFor="name" className="sr-only">
+          Nome
+        </label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          className="form-input"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          maxLength={100}
+          aria-describedby="name-help"
+        />
+        <p id="name-help" className="form-text">
+          Seu nome completo.
+        </p>
+      </div>
 
       {/* E-mail field */}
       <div className="form-group">
@@ -156,15 +201,35 @@ export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
           type="email"
           id="email"
           name="email"
-          className="email-input"
-          placeholder="seu@email.com"
+          className="form-input"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
           aria-describedby="email-help"
         />
         <p id="email-help" className="form-text">
-          Receba atualizações sobre eventos e atividades da SAF Talismã.
+          Seu e-mail (não será publicado).
+        </p>
+      </div>
+
+      {/* Mensagem field */}
+      <div className="form-group">
+        <label htmlFor="message" className="sr-only">
+          Mensagem
+        </label>
+        <textarea
+          id="message"
+          name="message"
+          className="form-textarea"
+          rows={4}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          required
+          maxLength={2000}
+          aria-describedby="message-help"
+        ></textarea>
+        <p id="message-help" className="form-text">
+          Sua mensagem será enviada diretamente para nossa equipe.
         </p>
       </div>
 
@@ -192,17 +257,16 @@ export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
         disabled={submitting}
         className="submit-btn"
       >
-        {submitting ? "Enviando..." : "Assinar"}
+        {submitting ? "Enviando..." : "Enviar"}
       </button>
 
       {error && (
         <p className="error-message">{error}</p>
       )}
 
-      {status === "pending" && (
-        <p className="pending-message">
-          Um e-mail de confirmação foi enviado para {email}. Por favor, confirme
-          sua inscrição para receber a newsletter.
+      {status === "success" && (
+        <p className="success-message">
+          Sua mensagem foi enviada com sucesso! Entramos em contato em breve.
         </p>
       )}
     </form>

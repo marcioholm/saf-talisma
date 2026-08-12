@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
-import { sendEmail, escapeHtml } from "../../../lib/email";
-import { getSupabaseAdmin } from "../../../lib/supabase";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { verifyTurnstile } from "@/lib/turnstile";
+import { sendEmail, escapeHtml } from "@/lib/email";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
 type ContactPayload = {
-  nome?: string;
-  empresa?: string;
-  telefone?: string;
-  email?: string;
-  mensagem?: string;
+  nome: string;
+  email: string;
+  mensagem: string;
 };
 
 export async function POST(req: Request) {
@@ -18,46 +18,120 @@ export async function POST(req: Request) {
     const nome = (body.nome ?? "").trim();
     const email = (body.email ?? "").trim();
     const mensagem = (body.mensagem ?? "").trim();
-    const empresa = (body.empresa ?? "").trim();
-    const telefone = (body.telefone ?? "").trim();
 
-    if (!nome || !email || !mensagem) {
+    // Rate limiting: contact = 5 tentativas por IP em 15 minutos
+    const forwardedFor = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip");
+    const ip = forwardedFor ? forwardedFor.split(","")[0].trim() : "unknown";
+    const rateLimit = checkRateLimit("contact", ip);
+
+    if (!rateLimit.allowed) {
       return NextResponse.json(
-        { error: "Nome, e-mail e mensagem são obrigatórios." },
-        { status: 400 },
+        { error: "Muitas tentativas. Tente novamente em breve." },
+        { status: 429 },
+        // Headers de rate limiting
+        { 
+          headers: { 
+            "Retry-After": String(Math.ceil((rateLimit.resetTime.getTime() - Date.now()) / 1000)),
+            "X-RateLimit-Remaining": String(rateLimit.remaining),
+            "X-RateLimit-Reset": rateLimit.resetTime.toISOString(),
+          } 
+        }
       );
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: "E-mail inválido." }, { status: 400 });
+
+    // Validar nome
+    if (!nome || nome.length < 2) {
+      return NextResponse.json(
+        { error: "Por favor, insira seu nome." },
+        { status: 400 }
+      );
+    }
+
+    if (nome.length > 100) {
+      return NextResponse.json(
+        { error: "Nome muito longo." },
+        { status: 400 }
+      );
+    }
+
+    // Validar e-mail robusto
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Por favor, insira um e-mail válido." },
+        { status: 400 }
+      );
+    }
+
+    if (email.length > 254) {
+      return NextResponse.json(
+        { error: "E-mail muito longo." },
+        { status: 400 }
+      );
+    }
+
+    // Validar mensagem
+    if (!mensagem || mensagem.trim().length < 10) {
+      return NextResponse.json(
+        { error: "Por favor, insira uma mensagem com no mínimo 10 caracteres." },
+        { status: 400 }
+      );
+    }
+
+    if (mensagem.length > 2000) {
+      return NextResponse.json(
+        { error: "Mensagem muito longa." },
+        { status: 400 }
+      );
+    }
+
+    // Validar Turnstile (se token fornecido)
+    const turnstileToken = req.headers.get("x-turnstile-token");
+    if (turnstileToken) {
+      const validation = await verifyTurnstile({
+        token: turnstileToken,
+        hostname: new URL(req.url).hostname,
+        action: "contact",
+      });
+
+      if (!validation.success) {
+        return NextResponse.json(
+          { error: "Verificação de segurança falhou." },
+          { status: 400 }
+        );
+      }
     }
 
     const admin = getSupabaseAdmin();
+    
+    // Buscar configurações de e-mail
     const { data: settings } = await admin
       .from("site_settings")
       .select("valor")
       .eq("chave", "contatos")
       .maybeSingle();
+    
     const contatos =
       settings?.valor && typeof settings.valor === "object"
         ? (settings.valor as { email?: string })
         : {};
-    const to = contatos.email || process.env.CONTACT_TO || "contato@saftalisma.com.br";
+    const to = contatos.email || "contato@saftalisma.com.br";
 
-    const { data: emailConfigRow } = await admin
+    const { data: emailConfig } = await admin
       .from("site_settings")
       .select("valor")
       .eq("chave", "email_config")
       .maybeSingle();
-    const emailConfig =
-      emailConfigRow?.valor && typeof emailConfigRow.valor === "object"
-        ? (emailConfigRow.valor as { from?: string })
-        : {};
-    const from = emailConfig.from || process.env.EMAIL_FROM || undefined;
+    
+    const from = emailConfig?.valor && typeof emailConfig?.valor === "object"
+      ? (emailConfig.valor as { from?: string }).from
+      : undefined;
+
+    // Sanitizar HTML na mensagem
+    const sanitizedMessage = escapeHtml(mensagem);
 
     const lines = [
       ["Nome", nome],
-      ["Empresa", empresa],
-      ["Telefone", telefone],
       ["E-mail", email],
     ]
       .filter(([, v]) => v)
@@ -73,22 +147,33 @@ export async function POST(req: Request) {
         <p>Uma nova mensagem foi enviada pelo site:</p>
         <table style="border-collapse:collapse;width:100%">${lines}</table>
         <p style="margin-top:16px"><strong>Mensagem:</strong></p>
-        <p style="white-space:pre-wrap;background:#f5f5f5;padding:12px;border-radius:6px">${escapeHtml(mensagem)}</p>
+        <p style="white-space:pre-wrap;background:#f5f5f5;padding:12px;border-radius:6px">${sanitizedMessage}</p>
       </div>`;
 
     await sendEmail({
       to,
       replyTo: email,
-      subject: `Novo contato: ${nome}${empresa ? ` — ${empresa}` : ""}`,
+      subject: `Novo contato: ${nome}`,
       html,
       ...(from ? { from } : {}),
     });
 
-    return NextResponse.json({ ok: true });
+    // Incrementar contador após sucesso (para fins de auditoria)
+    // O rate limit já foi verificado no início
+
+    return NextResponse.json({ ok: true }, {
+      headers: {
+        "X-RateLimit-Remaining": String(rateLimit.remaining),
+        "X-RateLimit-Reset": rateLimit.resetTime.toISOString(),
+        "Retry-After": "0",
+      },
+    });
+
   } catch (err) {
+    console.error("Erro no endpoint contact:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Erro ao enviar mensagem." },
-      { status: 500 },
+      { error: "Erro ao processar mensagem." },
+      { status: 500 }
     );
   }
 }
