@@ -6,10 +6,8 @@ import NewsletterForm from "./newsletter-form";
 
 function Mark({ small = false }: { small?: boolean }) {
   return (
-    <div className={`mark ${small ? "mark-small" : ""}`} aria-label="SAF Talismã">
-      <span className="mark-star">★</span>
-      <strong>SAF</strong>
-      <span>TALISMÃ</span>
+    <div className={`mark mark-logo ${small ? "mark-small" : ""}`} aria-label="SAF Talismã">
+      <img src="/logo-saf.svg" alt="SAF Talismã" />
     </div>
   );
 }
