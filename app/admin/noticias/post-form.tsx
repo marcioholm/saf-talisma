@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -64,6 +64,7 @@ export default function PostForm({ id }: { id?: string }) {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(Boolean(id));
   const isEdit = Boolean(id);
+  const initialStatusRef = useRef<Status>("draft");
 
   useEffect(() => {
     const client = getAdminClient();
@@ -101,6 +102,7 @@ export default function PostForm({ id }: { id?: string }) {
             gallery: JSON.stringify(data.gallery ?? [], null, 2),
             scheduled_at: toLocalInput(data.scheduled_at),
           });
+          initialStatusRef.current = data.status ?? "draft";
           setCurrentCover(data.imagem_url ?? "");
           setCoverPath(data.imagem_url ?? "");
           setLoading(false);
@@ -160,11 +162,24 @@ export default function PostForm({ id }: { id?: string }) {
         updated_by: userId,
       };
 
-      const { error } = isEdit
-        ? await client.from("posts").update(payload).eq("id", id)
-        : await client.from("posts").insert({ ...payload, author_user_id: userId });
+      const { error, data: saved } = isEdit
+        ? await client.from("posts").update(payload).eq("id", id).select("id").single()
+        : await client
+            .from("posts")
+            .insert({ ...payload, author_user_id: userId })
+            .select("id")
+            .single();
 
       if (error) throw new Error(error.message);
+
+      const savedId = isEdit ? id : saved?.id;
+      if (form.status === "published" && initialStatusRef.current !== "published" && savedId) {
+        fetch("/api/newsletter/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ postId: savedId }),
+        }).catch(() => {});
+      }
 
       setMessage({ type: "success", text: "Notícia salva." });
       router.push("/admin/noticias");
