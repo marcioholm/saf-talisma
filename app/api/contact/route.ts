@@ -127,10 +127,10 @@ export async function POST(req: Request) {
     const { ContactFormAdminEmail, ContactFormUserEmail } = await import("@/emails/templates");
 
     // Email to Admin
-    const adminHtml = renderEmail(ContactFormAdminEmail({ userName: nome, email, message: mensagem }));
+    const adminHtml = await renderEmail(ContactFormAdminEmail({ userName: nome, email, message: mensagem }));
     
     // Email to User
-    const userHtml = renderEmail(ContactFormUserEmail({ userName: nome, message: mensagem }));
+    const userHtml = await renderEmail(ContactFormUserEmail({ userName: nome, message: mensagem }));
 
     // Send to Admin
     await sendEmail({

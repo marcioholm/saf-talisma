@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     const { NewsletterConfirmEmail } = await import("@/emails/templates");
 
     const confirmUrl = `${associationConfig.url}/api/newsletter/confirm?token=dummy-token-for-now`;
-    const html = renderEmail(NewsletterConfirmEmail({ confirmUrl }));
+    const html = await renderEmail(NewsletterConfirmEmail({ confirmUrl }));
 
     await sendEmail({
       to: email,

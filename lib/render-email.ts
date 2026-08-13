@@ -1,6 +1,6 @@
 import * as React from 'react';
-import * as ReactDOMServer from 'react-dom/server';
+import { render } from '@react-email/render';
 
-export function renderEmail(Component: React.ReactElement): string {
-  return "<!DOCTYPE html>" + ReactDOMServer.renderToStaticMarkup(Component);
+export async function renderEmail(Component: React.ReactElement): Promise<string> {
+  return await render(Component);
 }
