@@ -92,10 +92,14 @@ export function SiteHeader({ active = "" }: { active?: string }) {
     <>
       <div className="topline">
         <div className="shell topline-inner">
-          <span>{associationConfig.slogan}</span>
-          <div>
+          <div className="topline-left">
+            <span className="topline-badge">OFICIAL</span>
+            <span>{associationConfig.slogan}</span>
+          </div>
+          <div className="topline-right">
             <Link href="/sobre">Institucional</Link>
             <Link href="/patrocinadores">Seja parceiro</Link>
+            <Link href="/admin/login" className="topline-admin-link">Área Restrita 🔒</Link>
           </div>
         </div>
       </div>
@@ -127,7 +131,7 @@ export function SiteHeader({ active = "" }: { active?: string }) {
             ))}
           </nav>
           <Link className="partner-button" href="/patrocinadores">
-            Seja parceiro <span>↗</span>
+            Seja parceiro <span className="arrow">↗</span>
           </Link>
         </div>
       </header>

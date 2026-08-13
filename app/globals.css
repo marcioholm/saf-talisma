@@ -65,24 +65,49 @@ h1, h2, h3, strong, b {
 
 /* ---------------- Topline ---------------- */
 .topline {
-  background: var(--ink);
-  color: #aaa;
-  font-size: 10px;
+  background: #0b0b0b;
+  color: #999;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   font-family: "Barlow Condensed", sans-serif;
+  border-bottom: 1px solid #1a1a1a;
 }
 
 .topline-inner {
-  height: 30px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
+.topline-left {
+  display: flex;
+  align-items: center;
+}
+
+.topline-badge {
+  background: rgba(97, 206, 112, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(97, 206, 112, 0.3);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  margin-right: 10px;
+}
+
+.topline-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
 .topline a {
-  margin-left: 24px;
+  color: #aaa;
+  text-decoration: none;
   transition: color 0.2s;
 }
 
@@ -90,14 +115,22 @@ h1, h2, h3, strong, b {
   color: var(--magenta-soft);
 }
 
+.topline-admin-link {
+  color: var(--green) !important;
+  font-weight: 800;
+}
+
 /* ---------------- Header ---------------- */
 .header {
-  height: 84px;
-  background: var(--ink);
-  border-bottom: 1px solid #262626;
+  height: 76px;
+  background: rgba(10, 10, 10, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   position: sticky;
   top: 0;
   z-index: 50;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .header-main {
@@ -107,39 +140,27 @@ h1, h2, h3, strong, b {
 }
 
 .brand {
-  margin-right: 58px;
+  margin-right: 32px;
   display: block;
 }
 
-/* Escudo da SAF Talismã */
-.mark {
-  width: 82px;
-  aspect-ratio: 1;
-  clip-path: polygon(50% 0, 94% 22%, 88% 75%, 50% 100%, 12% 75%, 6% 22%);
-  background: var(--magenta);
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  line-height: 0.85;
-  border: 2px solid #fff;
-  outline: 2px solid var(--magenta);
-  transition: filter 0.2s;
-}
-
-.brand .mark:hover {
-  filter: brightness(1.12);
-}
-
-/* Logo oficial aplicada no header (site e admin) */
+/* Escudo da SAF Talismã no Header */
 .mark-logo {
+  width: 52px;
+  height: 52px;
   background: transparent;
   clip-path: none;
   border: none;
   outline: none;
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: 10px;
+  transition: transform 0.2s, filter 0.2s;
+  box-shadow: 0 2px 10px rgba(210, 0, 210, 0.2);
+}
+
+.brand .mark-logo:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
 }
 
 .mark-logo img {
@@ -149,41 +170,13 @@ h1, h2, h3, strong, b {
   display: block;
 }
 
-.mark strong {
-  font-size: 25px;
-  letter-spacing: -0.08em;
-}
-
-.mark > span:last-child {
-  font-size: 8px;
-  letter-spacing: 0.13em;
-  margin-top: 5px;
-}
-
-.mark-star {
-  font-size: 9px;
-  margin-bottom: 4px;
-}
-
-.mark-small {
-  width: 54px;
-}
-
-.mark-small strong {
-  font-size: 18px;
-}
-
-.mark-small > span:last-child {
-  font-size: 5px;
-}
-
-/* Navegação */
+/* Navegação e Abas */
 .nav {
   display: flex;
   align-items: center;
-  gap: 34px;
+  gap: 12px;
   font-family: "Barlow Condensed", sans-serif;
-  font-size: 17px;
+  font-size: 15.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -191,51 +184,63 @@ h1, h2, h3, strong, b {
 
 .nav a {
   position: relative;
-  color: #fff;
-  transition: color 0.2s;
+  color: #dddddd;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .nav a:after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 100%;
-  bottom: -12px;
-  height: 2px;
-  background: var(--magenta);
-  transition: right 0.2s;
+  display: none;
 }
 
-.nav a:hover,
+.nav a:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .nav a.active {
-  color: var(--magenta-soft);
-}
-
-.nav a:hover:after,
-.nav a.active:after {
-  right: 0;
+  color: #ff5ce8;
+  background: rgba(210, 0, 210, 0.15);
+  border: 1px solid rgba(210, 0, 210, 0.35);
+  box-shadow: 0 0 12px rgba(210, 0, 210, 0.2);
+  font-weight: 800;
 }
 
 /* Botão Seja parceiro */
 .partner-button {
   margin-left: auto;
-  background: var(--green);
-  color: var(--ink);
-  padding: 14px 20px;
+  background: linear-gradient(135deg, var(--green), #42b752);
+  color: #000;
+  padding: 10px 18px;
+  border-radius: 6px;
   font-family: "Barlow Condensed", sans-serif;
   font-size: 13px;
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  transition: background 0.2s, transform 0.15s;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(97, 206, 112, 0.25);
+  transition: all 0.2s ease;
 }
 
-.partner-button span {
-  margin-left: 14px;
+.partner-button .arrow {
+  font-size: 14px;
+  transition: transform 0.2s;
 }
 
 .partner-button:hover {
-  background: var(--green-2);
+  background: linear-gradient(135deg, #74db82, var(--green));
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(97, 206, 112, 0.35);
+}
+
+.partner-button:hover .arrow {
+  transform: translate(2px, -2px);
 }
 
 .partner-button:active {
