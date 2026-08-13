@@ -62,6 +62,23 @@ export async function POST(request: Request) {
     // Em produção, verificar se e-mail já está inscrito (pending ou ativo)
     // e criar registro com status pending e token de confirmação criptograficamente seguro
     // com expiração e uso único
+    
+    // Send confirmation email
+    const { associationConfig } = await import("@/lib/association-config");
+    const { emailConfig } = await import("@/lib/email-config");
+    const { sendEmail } = await import("@/lib/email");
+    const { renderEmail } = await import("@/lib/render-email");
+    const { NewsletterConfirmEmail } = await import("@/emails/templates");
+
+    const confirmUrl = `${associationConfig.url}/api/newsletter/confirm?token=dummy-token-for-now`;
+    const html = renderEmail(NewsletterConfirmEmail({ confirmUrl }));
+
+    await sendEmail({
+      to: email,
+      subject: `Confirme sua inscrição na newsletter - ${associationConfig.name}`,
+      html,
+      from: emailConfig.from.default,
+    });
 
     return NextResponse.json({
       status: "pending",

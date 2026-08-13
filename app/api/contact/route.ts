@@ -114,47 +114,39 @@ export async function POST(req: Request) {
       settings?.valor && typeof settings.valor === "object"
         ? (settings.valor as { email?: string })
         : {};
-    const to = contatos.email || "contato@saftalisma.com.br";
-
-    const { data: emailConfig } = await admin
-      .from("site_settings")
-      .select("valor")
-      .eq("chave", "email_config")
-      .maybeSingle();
     
-    const from = emailConfig?.valor && typeof emailConfig?.valor === "object"
-      ? (emailConfig.valor as { from?: string }).from
-      : undefined;
+    // Import configuration here or at the top of the file
+    // Assumes associationConfig and emailConfig are properly imported in lib/email or here.
+    const { associationConfig } = await import("@/lib/association-config");
+    const { emailConfig: emailConfigImport } = await import("@/lib/email-config");
 
-    // Sanitizar HTML na mensagem
-    const sanitizedMessage = escapeHtml(mensagem);
+    const to = contatos.email || `contato@${associationConfig.domain}`;
+    const from = emailConfigImport.from.contact;
 
-    const lines = [
-      ["Nome", nome],
-      ["E-mail", email],
-    ]
-      .filter(([, v]) => v)
-      .map(
-        ([k, v]) =>
-          `<tr><td style="padding:6px 12px;border:1px solid #ddd;font-weight:700">${k}</td><td style="padding:6px 12px;border:1px solid #ddd">${escapeHtml(v)}</td></tr>`,
-      )
-      .join("");
+    const { renderEmail } = await import("@/lib/render-email");
+    const { ContactFormAdminEmail, ContactFormUserEmail } = await import("@/emails/templates");
 
-    const html = `
-      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
-        <h2 style="color:#0a6b3d">Novo contato — SAF Talismã</h2>
-        <p>Uma nova mensagem foi enviada pelo site:</p>
-        <table style="border-collapse:collapse;width:100%">${lines}</table>
-        <p style="margin-top:16px"><strong>Mensagem:</strong></p>
-        <p style="white-space:pre-wrap;background:#f5f5f5;padding:12px;border-radius:6px">${sanitizedMessage}</p>
-      </div>`;
+    // Email to Admin
+    const adminHtml = renderEmail(ContactFormAdminEmail({ userName: nome, email, message: mensagem }));
+    
+    // Email to User
+    const userHtml = renderEmail(ContactFormUserEmail({ userName: nome, message: mensagem }));
 
+    // Send to Admin
     await sendEmail({
       to,
       replyTo: email,
       subject: `Novo contato: ${nome}`,
-      html,
-      ...(from ? { from } : {}),
+      html: adminHtml,
+      from,
+    });
+
+    // Send confirmation to User
+    await sendEmail({
+      to: email,
+      subject: `Recebemos sua mensagem - ${associationConfig.name}`,
+      html: userHtml,
+      from,
     });
 
     // Incrementar contador após sucesso (para fins de auditoria)

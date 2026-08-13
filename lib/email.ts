@@ -1,3 +1,5 @@
+import { emailConfig } from "./email-config";
+
 if (typeof window !== "undefined") {
   throw new Error("lib/email.ts só pode ser usado no servidor.");
 }
@@ -13,7 +15,8 @@ export type EmailMessage = {
 };
 
 export function emailFrom(): string {
-  return process.env.EMAIL_FROM || "onboarding@resend.dev";
+  // Try to use environment variable first, then fallback to config
+  return process.env.EMAIL_FROM || emailConfig.from.default;
 }
 
 async function resend(path: string, body: unknown): Promise<{ id?: string }> {

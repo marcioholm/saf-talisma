@@ -10,6 +10,7 @@ import {
   type HomeDestaque,
   type HomeEvento,
 } from "../../../lib/home-content";
+import { associationConfig } from "../../../lib/association-config";
 
 type Settings = {
   contatos: { email: string; telefone: string; endereco: string; cidade: string; estado: string };
@@ -123,7 +124,7 @@ export default function AdminConfiguracoes() {
           <label htmlFor="email">
             E-mail de contato <small>(recebe as solicitações de parceria)</small>
           </label>
-          <input id="email" type="email" value={settings.contatos.email} onChange={(e) => setContato("email", e.target.value)} placeholder="contato@saftalisma.com.br" />
+          <input id="email" type="email" value={settings.contatos.email} onChange={(e) => setContato("email", e.target.value)} placeholder={`contato@${associationConfig.domain}`} />
         </div>
         <div className="field">
           <label htmlFor="telefone">Telefone / WhatsApp</label>
@@ -154,7 +155,7 @@ export default function AdminConfiguracoes() {
             type="email"
             value={settings.email_config.from}
             onChange={(e) => setEmailCfg("from", e.target.value)}
-            placeholder="contato@saftalisma.com.br"
+            placeholder={`contato@${associationConfig.domain}`}
           />
           <p className="hint">
             Usado como remetente (from) no envio de contato e newsletter. Enquanto o domínio não for

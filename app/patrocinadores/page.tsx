@@ -1,5 +1,6 @@
 import { SiteHeader, SiteFooter } from "../../components/site-shell";
 import { supabaseUrl, supabaseAnonKey, publicFileUrl } from "../../lib/supabase";
+import { associationConfig } from "../../lib/association-config";
 import { PartnerForm } from "./partner-form";
 import "../public.css";
 
@@ -57,7 +58,7 @@ async function getContactEmail(): Promise<string> {
   } catch (e) {
     console.error("Erro ao buscar e-mail de contato:", e);
   }
-  return "contato@saftalisma.com.br";
+  return `contato@${associationConfig.domain}`;
 }
 
 export default async function PatrocinadoresPage() {
@@ -78,7 +79,7 @@ export default async function PatrocinadoresPage() {
             Nossos <em>parceiros</em>
           </h1>
           <p>
-            Empresas e instituições que caminham junto com a SAF Talismã. Sua marca também pode
+            Empresas e instituições que caminham junto com a {associationConfig.name}. Sua marca também pode
             fazer parte dessa história.
           </p>
         </div>

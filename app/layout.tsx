@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { associationConfig } from "../lib/association-config";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SAF Talismã | O clube do Norte Pioneiro",
-  description: "Site oficial da SAF Talismã. Notícias, jogos, categorias e a história do futsal de Wenceslau Braz.",
+  title: `${associationConfig.name} | ${associationConfig.slogan}`,
+  description: `Site oficial da ${associationConfig.name}. Notícias, jogos, categorias e a história do futsal de ${associationConfig.location.split(',')[0]}.`,
   icons: {
     icon: "/favicon.svg",
     apple: "/logo-saf.svg",

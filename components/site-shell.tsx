@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import NewsletterForm from "./newsletter-form";
+import { associationConfig } from "../lib/association-config";
 
 function Mark({ small = false }: { small?: boolean }) {
   return (
@@ -28,7 +29,7 @@ export function SiteHeader({ active = "" }: { active?: string }) {
     <>
       <div className="topline">
         <div className="shell topline-inner">
-          <span>O clube do Norte Pioneiro</span>
+          <span>{associationConfig.slogan}</span>
           <div>
             <Link href="/sobre">Institucional</Link>
             <Link href="/patrocinadores">Seja parceiro</Link>
@@ -83,9 +84,12 @@ export function SiteFooter() {
         <div>
           <Mark />
           <p>
-            Futsal, formação e futuro.
-            <br />
-            De Wenceslau Braz para o mundo.
+            {associationConfig.description.split('. ').map((part, i, arr) => (
+              <span key={i}>
+                {part}{i < arr.length - 1 ? '.' : ''}
+                {i === 0 && <br />}
+              </span>
+            ))}
           </p>
         </div>
         <div>
@@ -102,15 +106,15 @@ export function SiteFooter() {
         </div>
         <div>
           <strong>CONTATO</strong>
-          <span>Wenceslau Braz · Paraná</span>
-          <a className="footer-contact" href="mailto:contato@saftalisma.com.br">
-            contato@saftalisma.com.br
+          <span>{associationConfig.location.split(',').join(' · ')}</span>
+          <a className="footer-contact" href={`mailto:contato@${associationConfig.domain}`}>
+            contato@{associationConfig.domain}
           </a>
         </div>
       </div>
       <div className="shell footer-bottom">
-        <span>© 2026 SAF Talismã. Todos os direitos reservados.</span>
-        <span>FEITO COM RAÇA NO NORTE PIONEIRO.</span>
+        <span>© {new Date().getFullYear()} {associationConfig.name}. Todos os direitos reservados.</span>
+        <span>FEITO COM RAÇA NO {associationConfig.location.split(',')[0].toUpperCase()}.</span>
       </div>
     </footer>
   );

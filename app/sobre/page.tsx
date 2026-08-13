@@ -1,5 +1,6 @@
 import { SiteHeader, SiteFooter } from "../../components/site-shell";
 import { supabaseUrl, supabaseAnonKey, publicFileUrl } from "../../lib/supabase";
+import { associationConfig } from "../../lib/association-config";
 import "../public.css";
 
 type Content = { chave: string; conteudo: Record<string, unknown> };
@@ -78,7 +79,7 @@ export default async function SobrePage() {
           <h1>
             Nosso <em>clube</em>
           </h1>
-          <p>A história e o elenco de uma SAF construída no Norte Pioneiro do Paraná.</p>
+          <p>A história e o elenco de uma SAF construída no {associationConfig.location.split(',')[0].toUpperCase()}.</p>
         </div>
       </section>
 
@@ -97,7 +98,7 @@ export default async function SobrePage() {
               .map((p, i) => <p key={i}>{p}</p>)
           ) : (
             <p>
-              A SAF Talismã nasceu em Wenceslau Braz (PR) como um projeto de formação esportiva e
+              A {associationConfig.name} nasceu em {associationConfig.location} como um projeto de formação esportiva e
               humana. Mais do que um clube de futsal, somos uma escola de valores: disciplina,
               respeito e espírito de equipe — dentro e fora das quadras. As informações detalhadas
               da nossa trajetória serão publicadas em breve.

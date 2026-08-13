@@ -20,12 +20,15 @@ type Post = {
   published_at: string;
 };
 
+import { associationConfig } from "../lib/association-config";
+
 function Mark({ small = false }: { small?: boolean }) {
+  const [primeiroNome, ...resto] = associationConfig.name.split(" ");
   return (
-    <div className={`mark ${small ? "mark-small" : ""}`} aria-label="SAF Talismã">
+    <div className={`mark ${small ? "mark-small" : ""}`} aria-label={associationConfig.name}>
       <span className="mark-star">★</span>
-      <strong>SAF</strong>
-      <span>TALISMÃ</span>
+      <strong>{primeiroNome}</strong>
+      <span>{resto.join(" ")}</span>
     </div>
   );
 }
@@ -308,11 +311,11 @@ export default async function Home() {
               transformar vidas.
             </h2>
             <p>
-              A SAF Talismã é mais do que um clube de futsal. É um projeto de formação esportiva e
+              A {associationConfig.name} é mais do que um clube de futsal. É um projeto de formação esportiva e
               humana que acredita no poder do esporte para abrir caminhos.
             </p>
             <p>
-              Há 17 anos, desenvolvemos atletas com disciplina, respeito e espírito de equipe — dentro
+              Há {new Date().getFullYear() - associationConfig.founded} anos, desenvolvemos atletas com disciplina, respeito e espírito de equipe — dentro
               e fora das quadras.
             </p>
             <div className="stats">
@@ -338,7 +341,7 @@ export default async function Home() {
 
       <section className="partners shell" id="parceiros">
         <span className="label">QUEM ACREDITA NO NOSSO JOGO</span>
-        <h2>Parceiros do Talismã</h2>
+        <h2>Parceiros do clube</h2>
         <div className="partner-grid">
           <div>
             MASTER
@@ -346,14 +349,9 @@ export default async function Home() {
             <strong>PARCEIRO</strong>
           </div>
           <div>
-            NORTE
+            {associationConfig.location.split(',')[0].toUpperCase()}
             <br />
-            <strong>PIONEIRO</strong>
-          </div>
-          <div>
-            WENCESLAU
-            <br />
-            <strong>BRAZ</strong>
+            <strong>E REGIÃO</strong>
           </div>
           <div>
             SUA MARCA
