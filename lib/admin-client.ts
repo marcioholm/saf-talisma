@@ -48,6 +48,7 @@ export async function getMyRole(
 
   // Fallback 2: admin check for official admin emails
   const adminEmails = [
+    "admin@saftalisma.com.br",
     "marketing.northway@gmail.com",
     "contato@saftalisma.com.br",
     "saftalisma1@gmail.com",
