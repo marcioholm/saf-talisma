@@ -1236,78 +1236,303 @@ h1, h2, h3, strong, b {
 }
 
 /* ---------------- Rodapé ---------------- */
-footer {
-  background: var(--ink);
+footer.site-footer {
+  background: #0a0a0a;
   color: #fff;
-  padding-top: 65px;
+  padding-top: 0;
+  border-top: 1px solid #1f1f1f;
+}
+
+.footer-main-wrap {
+  padding: 60px 0 45px 0;
+  background: radial-gradient(800px 300px at 50% 100%, rgba(210, 0, 210, 0.06), transparent 70%);
 }
 
 .footer-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1.5fr;
-  gap: 55px;
-  padding-bottom: 55px;
+  grid-template-columns: 1.8fr 1fr 1.5fr 1.3fr;
+  gap: 48px;
 }
 
-.footer-grid > div {
+.footer-col {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 13px;
 }
 
-.footer-grid p,
-.footer-grid a,
-.footer-grid span {
-  color: #888;
-  font-size: 11px;
+/* Coluna Brand */
+.footer-logo-link {
+  display: inline-block;
+  margin-bottom: 12px;
+  transition: transform 0.2s;
+}
+
+.footer-logo-link:hover {
+  transform: scale(1.03);
+}
+
+.footer-badge {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: var(--green);
+  background: rgba(97, 206, 112, 0.12);
+  border: 1px solid rgba(97, 206, 112, 0.3);
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.footer-brand-title {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 10px 0;
+  letter-spacing: 0.01em;
+}
+
+.footer-brand-desc {
+  font-size: 13.5px;
+  color: #a0a0a0;
   line-height: 1.6;
-  transition: color 0.2s;
+  margin: 0 0 16px 0;
 }
 
-.footer-grid a:hover {
+.footer-region-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #8a8a8a;
+  background: #141414;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid #222;
+}
+
+/* Headings gerais */
+.footer-heading {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #ffffff;
+  margin: 0 0 20px 0;
+  text-transform: uppercase;
+  position: relative;
+  padding-bottom: 6px;
+}
+
+.footer-heading::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 24px;
+  height: 2px;
+  background: var(--magenta);
+}
+
+/* Navegação */
+.footer-nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footer-nav-list a {
+  color: #aaaaaa;
+  font-size: 13.5px;
+  text-decoration: none;
+  transition: color 0.2s, transform 0.2s;
+  display: inline-block;
+}
+
+.footer-nav-list a:hover {
+  color: var(--green);
+  transform: translateX(4px);
+}
+
+/* Contato & Sede */
+.footer-contact-item {
+  display: flex;
+  gap: 10px;
+  color: #bbb;
+  font-size: 13px;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+
+.footer-contact-item strong {
+  display: block;
+  color: #fff;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: "Barlow Condensed", sans-serif;
+  margin-bottom: 2px;
+}
+
+.footer-contact-item small {
+  display: block;
+  color: #777;
+  font-size: 11px;
+}
+
+.footer-contact-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #141414;
+  border: 1px solid #242424;
+  color: #e0e0e0;
+  padding: 9px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  width: 100%;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+}
+
+.footer-contact-card:hover {
+  background: #1c1c1c;
+  border-color: var(--green);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.footer-contact-wa:hover {
+  border-color: #25d366;
+  color: #25d366;
+}
+
+.footer-contact-email:hover {
+  border-color: var(--magenta);
   color: var(--magenta-soft);
 }
 
-.footer-grid strong {
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  margin-bottom: 10px;
-  color: #e6e6e6;
-  font-family: "Barlow Condensed", sans-serif;
-  text-transform: uppercase;
+.footer-cnpj {
+  font-size: 11px;
+  color: #666;
+  margin-top: 8px;
 }
 
-/* Destaque de contato em verde */
-.footer-contact {
-  color: var(--green) !important;
-  font-family: "Barlow Condensed", sans-serif !important;
-  font-size: 13px !important;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  border: 1px solid rgba(97, 206, 112, 0.5);
+/* Redes Sociais */
+.footer-social-intro {
+  font-size: 13px;
+  color: #999;
+  line-height: 1.5;
+  margin: 0 0 16px 0;
+}
+
+.footer-social-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.social-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
   padding: 10px 16px;
-  border-radius: var(--radius);
-  margin-top: 4px;
+  border-radius: 6px;
+  background: #141414;
+  border: 1px solid #242424;
+  color: #ddd;
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  width: 100%;
 }
 
-.footer-contact:hover {
-  color: var(--ink) !important;
-  background: var(--green);
-  border-color: var(--green);
+.social-btn span {
+  font-size: 13px;
 }
 
+.social-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.social-btn-instagram:hover {
+  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.social-btn-youtube:hover {
+  background: #ff0000;
+  border-color: #ff0000;
+  color: #ffffff;
+}
+
+.social-btn-facebook:hover {
+  background: #1877f2;
+  border-color: #1877f2;
+  color: #ffffff;
+}
+
+.social-btn-whatsapp:hover {
+  background: #25d366;
+  border-color: #25d366;
+  color: #ffffff;
+}
+
+/* Faixa Inferior */
 .footer-bottom {
-  border-top: 1px solid #262626;
-  padding: 20px 0;
+  border-top: 1px solid #1c1c1c;
+  padding: 22px 0;
   display: flex;
   justify-content: space-between;
-  color: #666;
-  font-size: 8px;
-  letter-spacing: 0.12em;
-  font-family: "Barlow Condensed", sans-serif;
-  text-transform: uppercase;
+  align-items: center;
+  color: #777777;
+  font-size: 12px;
+  font-family: "Inter", sans-serif;
+}
+
+.developer-credit strong {
+  color: #aaa;
+  font-weight: 600;
+}
+
+.developer-credit a {
+  color: #888;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.developer-credit a:hover {
+  color: var(--green);
+}
+
+@media (max-width: 900px) {
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 36px;
+  }
+}
+
+@media (max-width: 600px) {
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .footer-bottom {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
 }
 
 /* ---------------- Responsivo ---------------- */
