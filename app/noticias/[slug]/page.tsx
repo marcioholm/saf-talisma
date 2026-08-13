@@ -1,10 +1,6 @@
-"use client";
-
-import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { SiteHeader, SiteFooter } from "../../../components/site-shell";
-import { supabase, publicFileUrl } from "../../../lib/supabase";
+import { supabaseUrl, supabaseAnonKey, publicFileUrl } from "../../../lib/supabase";
 import "../../public.css";
 
 type Post = {
@@ -19,83 +15,78 @@ type Post = {
   video_url: string | null;
   gallery: string[] | null;
   autor: string | null;
-  categoria: { nome: string; slug: string } | null;
   published_at: string;
+  categoria?: { nome: string; slug: string } | null;
 };
 
 type Related = { id: string; slug: string; titulo: string; imagem_url: string | null };
 
-export default function NoticiaPage() {
-  const params = useParams<{ slug: string }>();
-  const [post, setPost] = useState<Post | null>(null);
-  const [related, setRelated] = useState<Related[]>([]);
-  const [state, setState] = useState<"loading" | "found" | "missing">("loading");
-
-  useEffect(() => {
-    supabase
-      .from("posts")
-      .select("id, categoria_id, titulo, subtitulo, resumo, conteudo, imagem_url, cover_alt, video_url, gallery, autor, published_at")
-      .eq("slug", params.slug)
-      .eq("status", "published")
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (error || !data) {
-          setState("missing");
-          return;
-        }
-        setPost(data as unknown as Post);
-        setState("found");
-        if (data.categoria_id) {
-          supabase
-            .from("post_categories")
-            .select("nome, slug")
-            .eq("id", data.categoria_id)
-            .maybeSingle()
-            .then(({ data: cat }) => {
-              if (cat) setPost((prev) => (prev ? { ...prev, categoria: cat } : prev));
-            });
-          supabase
-            .from("posts")
-            .select("id, slug, titulo, imagem_url")
-            .eq("status", "published")
-            .neq("id", data.id)
-            .eq("categoria_id", data.categoria_id)
-            .order("published_at", { ascending: false })
-            .limit(3)
-            .then(({ data: rel }) => {
-              if (!rel?.length) return;
-              supabase
-                .from("posts")
-                .select("id, slug, titulo, imagem_url")
-                .eq("status", "published")
-                .neq("id", data.id)
-                .order("published_at", { ascending: false })
-                .limit(3)
-                .then(({ data: all }) => setRelated((all ?? []) as Related[]));
-            });
-        }
-      });
-  }, [params.slug]);
-
-  if (state === "loading") {
-    return (
-      <main className="page-body">
-        <SiteHeader />
-        <section className="page-hero">
-          <div className="shell">
-            <div className="empty" style={{ background: "transparent", borderColor: "#2a2a2a", color: "#8a8a8a" }}>
-              Carregando…
-            </div>
-          </div>
-        </section>
-      </main>
+async function getPostBySlug(slug: string): Promise<Post | null> {
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/posts?select=id,categoria_id,titulo,subtitulo,resumo,conteudo,imagem_url,cover_alt,video_url,gallery,autor,published_at&slug=eq.${encodeURIComponent(slug)}&status=eq.published&limit=1`,
+      {
+        headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
+        next: { revalidate: 60 },
+      }
     );
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.length > 0) {
+        const post = data[0] as Post;
+        if (post.categoria_id) {
+          const catRes = await fetch(
+            `${supabaseUrl}/rest/v1/post_categories?select=nome,slug&id=eq.${post.categoria_id}&limit=1`,
+            {
+              headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
+              next: { revalidate: 60 },
+            }
+          );
+          if (catRes.ok) {
+            const catData = await catRes.json();
+            if (catData && catData.length > 0) {
+              post.categoria = catData[0];
+            }
+          }
+        }
+        return post;
+      }
+    }
+  } catch (e) {
+    console.error("Erro ao buscar notícia por slug:", e);
   }
+  return null;
+}
 
-  if (state === "missing" || !post) {
+async function getRelatedPosts(currentId: string, categoriaId?: string | null): Promise<Related[]> {
+  try {
+    const filter = categoriaId ? `&categoria_id=eq.${categoriaId}` : "";
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/posts?select=id,slug,titulo,imagem_url&status=eq.published&id=neq.${currentId}&order=published_at.desc&limit=3${filter}`,
+      {
+        headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
+        next: { revalidate: 60 },
+      }
+    );
+    if (res.ok) return await res.json();
+  } catch (e) {
+    console.error("Erro ao buscar notícias relacionadas:", e);
+  }
+  return [];
+}
+
+export default async function NoticiaPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const post = await getPostBySlug(slug);
+
+  if (!post) {
     return (
       <main className="page-body">
-        <SiteHeader />
+        <SiteHeader active="/noticias" />
         <section className="page-hero">
           <div className="shell">
             <Link href="/noticias" className="article-back">
@@ -110,7 +101,8 @@ export default function NoticiaPage() {
     );
   }
 
-  const paragraphs = post.conteudo
+  const related = await getRelatedPosts(post.id, post.categoria_id);
+  const paragraphs = (post.conteudo || "")
     .split(/\n\s*\n/)
     .map((p) => p.trim())
     .filter(Boolean);
