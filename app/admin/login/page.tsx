@@ -35,7 +35,7 @@ export default function AdminLoginPage() {
       );
       return;
     }
-    window.location.replace("/admin");
+    window.location.href = "/admin";
   }
 
   return (
@@ -74,7 +74,7 @@ export default function AdminLoginPage() {
           />
         </div>
         <button type="submit" className="btn-login" disabled={loading}>
-          {loading ? "Autenticando…" : "Entrar no Painel ➔"}
+          {loading ? "Autenticando…" : "Entrar no Painel"}
         </button>
 
         {error && (

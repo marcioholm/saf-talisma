@@ -163,7 +163,7 @@ export default async function SobrePage() {
               <p style={{ margin: "4px 0 0 0", color: "#aaa", fontSize: "14px" }}>Conheça a diretoria responsável pela condução da Associação.</p>
             </div>
             <Link href="/diretoria" className="partner-button" style={{ display: "inline-block" }}>
-              Ver Diretoria <span>↗</span>
+              Ver Diretoria
             </Link>
           </div>
         </div>

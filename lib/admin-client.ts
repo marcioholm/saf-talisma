@@ -38,12 +38,22 @@ export async function getMyRole(
     else if (roles.some((r) => r.role === "editor")) role = "editor";
   }
 
-  // Fallback to user_metadata or app_metadata if user_roles RLS prevents reading or user has metadata set
+  // Fallback 1: check metadata
   if (role === "none") {
     const metaRole = user.app_metadata?.role || user.user_metadata?.role;
     if (metaRole === "admin" || metaRole === "editor") {
-      role = metaRole;
+      role = metaRole as AdminRole;
     }
+  }
+
+  // Fallback 2: admin check for official admin emails
+  const adminEmails = [
+    "marketing.northway@gmail.com",
+    "contato@saftalisma.com.br",
+    "saftalisma1@gmail.com",
+  ];
+  if (role === "none" && user.email && adminEmails.includes(user.email.toLowerCase())) {
+    role = "admin";
   }
 
   const { data: profile } = await client

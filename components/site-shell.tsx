@@ -130,7 +130,7 @@ export function SiteHeader({ active = "" }: { active?: string }) {
             ))}
           </nav>
           <Link className="partner-button" href="/patrocinadores">
-            Seja parceiro <span className="arrow">↗</span>
+            Seja parceiro
           </Link>
         </div>
       </header>

@@ -162,7 +162,7 @@ export default async function PublicCampeonatosPage() {
                             fontWeight: "bold",
                           }}
                         >
-                          Ver Campeonato ↗
+                          Ver Campeonato
                         </Link>
                       </div>
                     </div>

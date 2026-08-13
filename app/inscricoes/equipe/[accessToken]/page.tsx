@@ -42,7 +42,7 @@ const STATUS_MAP: Record<RegistrationDetail["status"], { label: string; color: s
   email_verified: { label: "E-mail Verificado", color: "#42a5f5", desc: "Seu contato foi verificado e a equipe está na fila de análise." },
   under_review: { label: "Em Análise pela Comissão", color: "#ab47bc", desc: "A documentação da equipe está sendo verificada." },
   correction_requested: { label: "Correções Solicitadas", color: "#ef5350", desc: "Foram identificadas pendências na inscrição. Veja as instruções abaixo." },
-  approved: { label: "Inscrição Aprovada 🎉", color: "#66bb6a", desc: "Sua equipe está oficialmente inscrita na competição!" },
+  approved: { label: "Inscrição Aprovada", color: "#66bb6a", desc: "Sua equipe está oficialmente inscrita na competição!" },
   rejected: { label: "Inscrição Rejeitada", color: "#e53935", desc: "Infelizmente a inscrição não atendeu aos critérios." },
   cancelled: { label: "Inscrição Cancelada", color: "#78909c", desc: "A inscrição foi cancelada a pedido da equipe ou por prazo expirado." },
 };

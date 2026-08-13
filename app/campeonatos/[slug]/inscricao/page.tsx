@@ -337,7 +337,7 @@ export default function TeamRegistrationPage() {
               <div style={{ display: "flex", gap: 12 }}>
                 <button className="btn btn-ghost" onClick={() => setStep(5)}>Voltar</button>
                 <button disabled={submitting} className="btn btn-magenta" onClick={handleSubmitRegistration}>
-                  {submitting ? "Enviando..." : "Confirmar e Enviar Inscrição ➔"}
+                  {submitting ? "Enviando..." : "Confirmar e Enviar Inscrição"}
                 </button>
               </div>
             </div>
@@ -346,7 +346,7 @@ export default function TeamRegistrationPage() {
           {/* PASSO 7 — Sucesso & Protocolo */}
           {step === 7 && protocolResult && (
             <div style={{ background: "#fff", padding: 32, borderRadius: 8, border: "2px solid #61CE70", textAlign: "center" }}>
-              <h2 style={{ color: "#2e9c41", marginTop: 0 }}>🎉 Inscrição Realizada com Sucesso!</h2>
+              <h2 style={{ color: "#2e9c41", marginTop: 0 }}>Inscrição Realizada com Sucesso!</h2>
               <p>Obrigado! A inscrição da equipe <strong>{team.team_name}</strong> foi recebida.</p>
 
               <div style={{ background: "#f5f5f5", padding: 20, borderRadius: 6, margin: "24px 0" }}>
