@@ -6,14 +6,22 @@ const DEFAULT_SUPABASE_ANON_KEY = "sb_publishable_xfyG0CUyTWHk1JDesbUG8w_FVsOF56
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 
+let _adminClient: SupabaseClient | null = null;
+
 /**
- * Cliente do browser (sessão persistente em localStorage).
- * A autorização é garantida pelo RLS: staff/adm vêm de user_roles.
+ * Cliente singleton do browser (sessão persistente em localStorage).
  */
 export function getAdminClient(): SupabaseClient {
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: true, autoRefreshToken: true },
-  });
+  if (!_adminClient) {
+    _adminClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    });
+  }
+  return _adminClient;
 }
 
 export type AdminRole = "admin" | "editor" | "none";
@@ -28,33 +36,39 @@ export async function getMyRole(
 
   let role: AdminRole = "none";
 
-  const { data: roles, error } = await client
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", user.id);
-
-  if (!error && roles && roles.length > 0) {
-    if (roles.some((r) => r.role === "admin")) role = "admin";
-    else if (roles.some((r) => r.role === "editor")) role = "editor";
-  }
-
-  // Fallback 1: check metadata
-  if (role === "none") {
-    const metaRole = user.app_metadata?.role || user.user_metadata?.role;
-    if (metaRole === "admin" || metaRole === "editor") {
-      role = metaRole as AdminRole;
-    }
-  }
-
-  // Fallback 2: admin check for official admin emails
+  // Check official admin emails first for instant access
   const adminEmails = [
     "admin@saftalisma.com.br",
     "marketing.northway@gmail.com",
     "contato@saftalisma.com.br",
     "saftalisma1@gmail.com",
   ];
-  if (role === "none" && user.email && adminEmails.includes(user.email.toLowerCase())) {
+  if (user.email && adminEmails.includes(user.email.toLowerCase().trim())) {
     role = "admin";
+  }
+
+  if (role === "none") {
+    try {
+      const { data: roles, error } = await client
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+
+      if (!error && roles && roles.length > 0) {
+        if (roles.some((r) => r.role === "admin")) role = "admin";
+        else if (roles.some((r) => r.role === "editor")) role = "editor";
+      }
+    } catch (e) {
+      console.warn("Erro ao consultar user_roles:", e);
+    }
+  }
+
+  // Fallback: check metadata
+  if (role === "none") {
+    const metaRole = user.app_metadata?.role || user.user_metadata?.role;
+    if (metaRole === "admin" || metaRole === "editor") {
+      role = metaRole as AdminRole;
+    }
   }
 
   const { data: profile } = await client
@@ -63,7 +77,7 @@ export async function getMyRole(
     .eq("id", user.id)
     .maybeSingle();
 
-  const fullName = profile?.full_name || user.user_metadata?.full_name || user.email || null;
+  const fullName = profile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || user.email || null;
 
   return { role, fullName };
 }

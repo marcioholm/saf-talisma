@@ -11,31 +11,47 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    getAdminClient()
-      .auth.getSession()
-      .then(({ data }) => {
-        if (data.session) window.location.replace("/admin");
-      });
+    const client = getAdminClient();
+    client.auth.getSession().then(({ data }) => {
+      if (data.session?.user) {
+        window.location.href = "/admin";
+      }
+    });
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const { error } = await getAdminClient().auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    setLoading(false);
-    if (error) {
-      setError(
-        error.message === "Invalid login credentials"
-          ? "Email ou senha incorretos."
-          : error.message,
-      );
-      return;
+
+    try {
+      const client = getAdminClient();
+      const { data, error: signInError } = await client.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (signInError) {
+        setLoading(false);
+        setError(
+          signInError.message === "Invalid login credentials"
+            ? "E-mail ou senha incorretos."
+            : signInError.message,
+        );
+        return;
+      }
+
+      if (data.session) {
+        // Redireciona para o painel principal
+        window.location.href = "/admin";
+      } else {
+        setLoading(false);
+        setError("Não foi possível autenticar a sessão. Tente novamente.");
+      }
+    } catch (err: any) {
+      setLoading(false);
+      setError(err?.message || "Ocorreu um erro ao tentar entrar. Tente novamente.");
     }
-    window.location.href = "/admin";
   }
 
   return (
@@ -59,6 +75,7 @@ export default function AdminLoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            disabled={loading}
           />
         </div>
         <div className="field">
@@ -71,6 +88,7 @@ export default function AdminLoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            disabled={loading}
           />
         </div>
         <button type="submit" className="btn-login" disabled={loading}>

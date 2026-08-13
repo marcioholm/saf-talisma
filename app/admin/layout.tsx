@@ -57,12 +57,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (pathname === "/admin/login") return;
     let alive = true;
     const client = getAdminClient();
-    client.auth.getSession().then(async ({ data }) => {
+
+    async function checkUserSession() {
+      const { data } = await client.auth.getSession();
       if (!alive) return;
-      if (!data.session) {
-        window.location.replace("/admin/login");
+      if (!data.session?.user) {
+        // Delay redirect slightly to ensure session is not mid-restore from localStorage
+        setTimeout(async () => {
+          if (!alive) return;
+          const { data: retryData } = await client.auth.getSession();
+          if (!retryData.session?.user) {
+            window.location.replace("/admin/login");
+          } else {
+            const { role, fullName } = await getMyRole(client);
+            if (!alive) return;
+            if (role === "none") {
+              setState({ status: "denied" });
+            } else {
+              setState({ status: "ready", role, fullName });
+            }
+          }
+        }, 350);
         return;
       }
+
       const { role, fullName } = await getMyRole(client);
       if (!alive) return;
       if (role === "none") {
@@ -70,9 +88,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return;
       }
       setState({ status: "ready", role, fullName });
+    }
+
+    checkUserSession();
+
+    const { data: authListener } = client.auth.onAuthStateChange(async (event, session) => {
+      if (!alive) return;
+      if (session?.user) {
+        const { role, fullName } = await getMyRole(client);
+        if (!alive) return;
+        if (role === "none") {
+          setState({ status: "denied" });
+        } else {
+          setState({ status: "ready", role, fullName });
+        }
+      } else if (event === "SIGNED_OUT") {
+        window.location.replace("/admin/login");
+      }
     });
+
     return () => {
       alive = false;
+      authListener.subscription.unsubscribe();
     };
   }, [pathname]);
 
