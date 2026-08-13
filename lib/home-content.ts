@@ -22,14 +22,14 @@ export type HomeEvento = {
 };
 
 export const DEFAULT_HOME_DESTAQUE: HomeDestaque = {
-  eyebrow: "ORGULHO DO NORTE PIONEIRO",
+  eyebrow: "CAMPOS GERAIS DO PARANÁ",
   titulo: "Mais que futsal.\nUm movimento.",
   subtitulo:
-    "Formando atletas, fortalecendo valores e levando o nome de Wenceslau Braz cada vez mais longe.",
+    "Formando atletas, fortalecendo valores e desenvolvendo o esporte em Arapoti e região.",
   numero: "17",
   numero_rotulo: "ANOS\nDE HISTÓRIA",
   botao_texto: "Conheça nossa história",
-  botao_link: "#historia",
+  botao_link: "/sobre",
 };
 
 export const DEFAULT_HOME_EVENTO: HomeEvento = {

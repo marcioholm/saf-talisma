@@ -8,28 +8,15 @@ interface NewsletterFormProps {
   onError?: (error: string) => void;
 }
 
-/**
- * Formulário de newsletter com:
- * - Honeypot campo oculto
- * - Validação de tempo mínimo (100ms realista)
- * - Double opt-in (estado pending)
- * - Validação de e-mail robusta
- * - Validação Turnstile do lado do servidor
- */
 export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<"idle" | "pending" | "active" | "error">("idle");
   const [error, setError] = useState<string>("");
 
-  const [turnstileToken, setTurnstileToken] = useState<string>("");
-  const [turnstileLoading, setTurnstileLoading] = useState(false);
-
-  // Honeypot: campo oculto que bots preenchem automaticamente
   const honeypot = useRef<HTMLInputElement>(null!);
 
   useEffect(() => {
-    // Resetar honeypot ao montar
     if (honeypot.current) {
       honeypot.current.value = "";
     }
@@ -38,7 +25,6 @@ export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Detectar honeypot preenchido (indica bot)
     if (honeypot.current && honeypot.current.value.trim() !== "") {
       setError("Requisição inválida.");
       setStatus("error");
@@ -48,12 +34,10 @@ export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
     setSubmitting(true);
     setError("");
 
-    // Coletar dados do formulário
     const formData = new FormData(e.target as HTMLFormElement);
-    const emailValue = formData.get("email") as string;
+    const emailValue = (formData.get("email") as string || email).trim();
     const turnstileTokenValue = formData.get("cf-turnstile-response") as string;
 
-    // Validação de e-mail robusta
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailValue || !emailRegex.test(emailValue)) {
       setError("Por favor, insira um e-mail válido.");
@@ -62,7 +46,6 @@ export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
       return;
     }
 
-    // Verificar limite de comprimento do e-mail
     if (emailValue.length > 254) {
       setError("E-mail muito longo.");
       setSubmitting(false);
@@ -70,7 +53,6 @@ export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
       return;
     }
 
-    // Validação Turnstile (somente se token fornecido)
     if (turnstileTokenValue) {
       const validation = await verifyTurnstile({
         token: turnstileTokenValue,
@@ -84,18 +66,10 @@ export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
         setStatus("error");
         return;
       }
-    } else if (!turnstileLoading) {
-      // Se não houver token e não estiver carregando, avisa
-      // (em produção com chave Full Access, isso bloquearia o envio)
     }
 
-    // Simular validação de tempo mínimo (100ms para detectar bots)
-    // Nota: Em produção real, comparar timestamp com Date.now()
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    // Enviar para endpoint server-side
     try {
-      const response = await fetch("/api/newsletter/subscribe", {
+      const response = await fetch("/api/newsletter", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -109,103 +83,99 @@ export function NewsletterForm({ onSuccess, onError }: NewsletterFormProps) {
       const result = await response.json();
 
       if (!response.ok) {
-        setError(result.error || "Erro ao subscrever newsletter.");
+        setError(result.error || "Erro ao inscrever na newsletter.");
         setStatus("error");
         setSubmitting(false);
+        onError?.(result.error);
         return;
       }
 
-      // Se sucesso e status pending, mostrar mensagem de confirmação
-      if (result.status === "pending") {
-        setStatus("pending");
-        setEmail("");
-        setTurnstileToken("");
-        
-        // Gerar token de confirmação (simulação - em produção usar crypto.randomBytes)
-        // Nota: Em produção, gerar token criptograficamente seguro, armazenar hash com expiração
-        setTimeout(() => {
-          setStatus("active");
-          onSuccess?.(emailValue);
-        }, 2000);
-      } else {
-        setStatus("active");
-        onSuccess?.(emailValue);
-      }
-    } catch (err) {
+      setStatus("pending");
+      setEmail("");
+      setSubmitting(false);
+      onSuccess?.(emailValue);
+    } catch {
       setError("Erro de conexão. Tente novamente mais tarde.");
       setStatus("error");
       setSubmitting(false);
+      onError?.("Erro de conexão");
     }
   };
 
   return (
     <form
-      className="newsletter-form"
+      className="newsletter-box"
       onSubmit={handleSubmit}
-      aria-label="Assinar newsletter"
+      aria-label="Inscreva-se na newsletter"
       noValidate
     >
-      <h3>Assine nossa newsletter</h3>
+      <div className="newsletter-head">
+        <h3 className="newsletter-title">Receba as novidades da Associação</h3>
+        <p className="newsletter-desc">
+          Inscreva-se para receber notícias, jogos, campeonatos, projetos e novidades da Associação Esportiva SAF/Talismã.
+        </p>
+      </div>
 
-      {/* E-mail field */}
-      <div className="form-group">
-        <label htmlFor="email" className="sr-only">
+      <div className="newsletter-fields">
+        <label htmlFor="newsletter-email" className="sr-only">
           E-mail
         </label>
         <input
           type="email"
-          id="email"
+          id="newsletter-email"
           name="email"
-          className="email-input"
-          placeholder="seu@email.com"
+          className="newsletter-input"
+          placeholder="Digite seu melhor e-mail"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          disabled={submitting}
           required
-          aria-describedby="email-help"
         />
-        <p id="email-help" className="form-text">
-          Receba atualizações sobre eventos e atividades da SAF Talismã.
-        </p>
+
+        <input
+          type="text"
+          name="bot-field"
+          className="hidden-field"
+          style={{ display: "none" }}
+          aria-hidden="true"
+          ref={honeypot}
+          tabIndex={-1}
+          autoComplete="off"
+        />
+
+        {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+          <div
+            className="turnstile-wrapper"
+            data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+          />
+        )}
+
+        <button
+          type="submit"
+          disabled={submitting}
+          className="newsletter-btn"
+        >
+          {submitting ? "Enviando..." : "Quero receber novidades"}
+        </button>
       </div>
 
-      {/* Honeypot field (invisible to humans, auto-filled by bots) */}
-      <input
-        type="text"
-        name="bot-field"
-        className="hidden-field"
-        aria-hidden="true"
-        ref={honeypot}
-        placeholder="Deixe este campo em branco"
-        autoComplete="off"
-      />
-
-      {/* Turnstile widget - somente se chave configurada */}
-      {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
-        <div
-          className="turnstile-wrapper"
-          data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-        />
-      )}
-
-      <button
-        type="submit"
-        disabled={submitting}
-        className="submit-btn"
-      >
-        {submitting ? "Enviando..." : "Assinar"}
-      </button>
+      <p className="newsletter-privacy">
+        Ao se inscrever, você concorda em receber comunicações da Associação. Você poderá cancelar a inscrição a qualquer momento.
+      </p>
 
       {error && (
-        <p className="error-message">{error}</p>
+        <p className="newsletter-msg newsletter-error" role="alert">
+          {error}
+        </p>
       )}
 
       {status === "pending" && (
-        <p className="pending-message">
-          Um e-mail de confirmação foi enviado para {email}. Por favor, confirme
-          sua inscrição para receber a newsletter.
+        <p className="newsletter-msg newsletter-success" role="status">
+          Verifique seu e-mail para confirmar sua inscrição. Se o endereço informado estiver apto para inscrição, você receberá um e-mail de confirmação.
         </p>
       )}
     </form>
   );
 }
+
 export default NewsletterForm;

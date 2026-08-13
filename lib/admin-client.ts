@@ -23,27 +23,38 @@ export async function getMyRole(
   client: SupabaseClient,
 ): Promise<{ role: AdminRole; fullName: string | null }> {
   const { data: session } = await client.auth.getSession();
-  const userId = session.session?.user.id;
-  if (!userId) return { role: "none", fullName: null };
+  const user = session.session?.user;
+  if (!user) return { role: "none", fullName: null };
 
-  const { data: roles } = await client
+  let role: AdminRole = "none";
+
+  const { data: roles, error } = await client
     .from("user_roles")
     .select("role")
-    .eq("user_id", userId);
+    .eq("user_id", user.id);
 
-  const role: AdminRole = roles?.some((r) => r.role === "admin")
-    ? "admin"
-    : roles?.some((r) => r.role === "editor")
-      ? "editor"
-      : "none";
+  if (!error && roles && roles.length > 0) {
+    if (roles.some((r) => r.role === "admin")) role = "admin";
+    else if (roles.some((r) => r.role === "editor")) role = "editor";
+  }
+
+  // Fallback to user_metadata or app_metadata if user_roles RLS prevents reading or user has metadata set
+  if (role === "none") {
+    const metaRole = user.app_metadata?.role || user.user_metadata?.role;
+    if (metaRole === "admin" || metaRole === "editor") {
+      role = metaRole;
+    }
+  }
 
   const { data: profile } = await client
     .from("profiles")
     .select("full_name")
-    .eq("id", userId)
+    .eq("id", user.id)
     .maybeSingle();
 
-  return { role, fullName: profile?.full_name || null };
+  const fullName = profile?.full_name || user.user_metadata?.full_name || user.email || null;
+
+  return { role, fullName };
 }
 
 /** Converte uma string simples em slug URL-safe (pt-BR). */

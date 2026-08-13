@@ -7,11 +7,13 @@ import "./admin.css";
 
 const NAV: { group: string; items: { href: string; label: string; admin?: boolean }[] }[] = [
   {
-    group: "Conteúdo",
+    group: "Conteúdo & Esporte",
     items: [
       { href: "/admin", label: "Visão geral" },
       { href: "/admin/noticias", label: "Notícias" },
       { href: "/admin/jogos", label: "Jogos" },
+      { href: "/admin/campeonatos", label: "Campeonatos" },
+      { href: "/admin/diretoria", label: "Diretoria" },
       { href: "/admin/transparencia", label: "Transparência" },
       { href: "/admin/banners", label: "Banners" },
       { href: "/admin/patrocinadores", label: "Patrocinadores" },
@@ -19,10 +21,19 @@ const NAV: { group: string; items: { href: string; label: string; admin?: boolea
     ],
   },
   {
+    group: "Configurações",
+    items: [
+      { href: "/admin/configuracoes/institucional", label: "Institucional", admin: true },
+      { href: "/admin/configuracoes/rodape", label: "Rodapé", admin: true },
+      { href: "/admin/configuracoes/sobre", label: "Sobre nós", admin: true },
+      { href: "/admin/configuracoes/redes-sociais", label: "Redes sociais", admin: true },
+    ],
+  },
+  {
     group: "Administração",
     items: [
       { href: "/admin/usuarios", label: "Usuários", admin: true },
-      { href: "/admin/configuracoes", label: "Configurações", admin: true },
+      { href: "/admin/configuracoes", label: "Geral", admin: true },
       { href: "/admin/auditoria", label: "Auditoria", admin: true },
     ],
   },

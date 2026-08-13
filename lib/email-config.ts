@@ -9,11 +9,20 @@ export const emailConfig = {
     text: "#ffffff",
     textMuted: "#8a8a8a",
   },
+  institutional: {
+    from: `${associationConfig.shortName} <contato@${associationConfig.domain}>`,
+    replyTo: associationConfig.operationalEmail,
+  },
+  automatic: {
+    from: `${associationConfig.shortName} <noreply@${associationConfig.domain}>`,
+    replyTo: associationConfig.operationalEmail,
+  },
   from: {
-    default: `"${associationConfig.name}" <noreply@${associationConfig.domain}>`,
-    contact: `"${associationConfig.name} Contato" <contato@${associationConfig.domain}>`,
+    default: `${associationConfig.shortName} <noreply@${associationConfig.domain}>`,
+    contact: `${associationConfig.shortName} <contato@${associationConfig.domain}>`,
   },
   replyTo: {
-    default: `contato@${associationConfig.domain}`,
+    default: associationConfig.operationalEmail,
   },
+  internalNotificationEmail: process.env.INTERNAL_NOTIFICATION_EMAIL || associationConfig.operationalEmail,
 };

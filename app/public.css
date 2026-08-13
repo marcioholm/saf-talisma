@@ -527,34 +527,80 @@
     radial-gradient(600px 260px at 90% 0%, rgba(210, 0, 210, .18), transparent 60%),
     #0d0d0d;
   border-bottom: 1px solid #1f1f1f;
+  padding: 44px 20px;
 }
-.newsletter-inner { display: flex; justify-content: center; padding: 44px 0; }
-.newsletter-form { width: 100%; max-width: 560px; text-align: center; }
-.newsletter-form label {
+.newsletter-inner { display: flex; justify-content: center; width: 100%; max-width: 720px; margin: 0 auto; }
+.newsletter-box { width: 100%; text-align: center; color: #fff; }
+.newsletter-head { margin-bottom: 20px; }
+.newsletter-title {
   font-family: "Barlow Condensed", sans-serif;
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 800;
   text-transform: uppercase;
   color: #fff;
   letter-spacing: .02em;
+  margin: 0 0 8px 0;
 }
-.newsletter-form .newsletter-row { display: flex; gap: 10px; margin-top: 14px; }
-.newsletter-form input {
+.newsletter-desc {
+  font-size: 14px;
+  color: #b0b0b0;
+  margin: 0;
+  line-height: 1.5;
+}
+.newsletter-fields {
+  display: flex;
+  gap: 10px;
+  max-width: 600px;
+  margin: 0 auto;
+  align-items: stretch;
+}
+.newsletter-input {
   flex: 1;
   border: 1px solid #3a3a3a;
   background: #161616;
   color: #fff;
   border-radius: 6px;
-  padding: 13px 14px;
+  padding: 14px 16px;
   font: 400 14px "Inter", sans-serif;
   min-width: 0;
 }
-.newsletter-form input:focus { outline: none; border-color: #D200D2; }
-.newsletter-form .newsletter-msg { margin: 12px 0 0; font-size: 13.5px; }
-.newsletter-form .newsletter-msg.ok { color: #61CE70; }
-.newsletter-form .newsletter-msg.err { color: #ff8a8a; }
-@media (max-width: 520px) {
-  .newsletter-form .newsletter-row { flex-direction: column; }
+.newsletter-input:focus { outline: none; border-color: #D200D2; }
+.newsletter-btn {
+  background: #D200D2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 14px 22px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .2s, opacity .2s;
+}
+.newsletter-btn:hover { background: #b000b0; }
+.newsletter-btn:disabled { opacity: .6; cursor: not-allowed; }
+.newsletter-privacy {
+  font-size: 12px;
+  color: #777;
+  margin: 12px 0 0 0;
+  line-height: 1.4;
+}
+.newsletter-msg {
+  margin: 14px 0 0;
+  font-size: 13.5px;
+  padding: 10px;
+  border-radius: 6px;
+  line-height: 1.4;
+}
+.newsletter-msg.newsletter-success { color: #61CE70; background: rgba(97, 206, 112, 0.1); border: 1px solid rgba(97, 206, 112, 0.3); }
+.newsletter-msg.newsletter-error { color: #ff8a8a; background: rgba(255, 138, 138, 0.1); border: 1px solid rgba(255, 138, 138, 0.3); }
+
+@media (max-width: 640px) {
+  .newsletter-fields { flex-direction: column; }
+  .newsletter-btn { width: 100%; }
 }
 
 /* ---------- Estado vazio (público) ---------- */
