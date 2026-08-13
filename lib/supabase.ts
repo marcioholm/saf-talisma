@@ -3,8 +3,8 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 const DEFAULT_SUPABASE_URL = "https://zompnocfdlofhsyuiuhj.supabase.co";
 const DEFAULT_SUPABASE_ANON_KEY = "sb_publishable_xfyG0CUyTWHk1JDesbUG8w_FVsOF56o";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
+export const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+export const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 const supabaseServiceKey =
   typeof process !== "undefined" ? process.env.SUPABASE_SERVICE_ROLE_KEY || "" : "";
 
@@ -12,9 +12,7 @@ const supabaseServiceKey =
  * Cliente público (anon) — respeita RLS: só lê conteúdo publicado.
  * Uso em componentes do lado do cliente e em leituras públicas no servidor.
  */
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
+export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
 /**
  * Cliente administrativo (service role) — ignora RLS.

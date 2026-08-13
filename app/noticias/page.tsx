@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { supabase, publicFileUrl } from "../../lib/supabase";
+import { supabase, supabaseUrl, supabaseAnonKey, publicFileUrl } from "../../lib/supabase";
 import { SiteHeader, SiteFooter } from "../../components/site-shell";
 import "../public.css";
 
@@ -48,9 +48,25 @@ export default function NoticiasPage() {
           .range(page * PER_PAGE, page * PER_PAGE + PER_PAGE - 1);
         if (cat !== "all") q = q.eq("categoria_id", cat);
         const { data, error, count } = await q;
-        if (!error && data) {
+
+        if (!error && data && data.length > 0) {
           setPosts(data as Post[]);
-          setTotal(count ?? 0);
+          setTotal(count ?? data.length);
+        } else {
+          // Fallback HTTP direto para a REST API do Supabase
+          const catFilter = cat !== "all" ? `&categoria_id=eq.${cat}` : "";
+          const fetchUrl = `${supabaseUrl}/rest/v1/posts?select=id,titulo,slug,resumo,imagem_url,autor,published_at,categoria_id&status=eq.published&order=published_at.desc&offset=${page * PER_PAGE}&limit=${PER_PAGE}${catFilter}`;
+          const res = await fetch(fetchUrl, {
+            headers: {
+              apikey: supabaseAnonKey,
+              Authorization: `Bearer ${supabaseAnonKey}`,
+            },
+          });
+          if (res.ok) {
+            const listData = await res.json();
+            setPosts((listData ?? []) as Post[]);
+            setTotal((listData ?? []).length);
+          }
         }
       } catch (err) {
         console.error("Erro ao carregar notícias:", err);
