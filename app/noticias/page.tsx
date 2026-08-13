@@ -35,22 +35,30 @@ export default function NoticiasPage() {
   }, []);
 
   useEffect(() => {
-    let q = supabase
-      .from("posts")
-      .select("id, titulo, slug, resumo, imagem_url, autor, published_at, categoria_id", {
-        count: "exact",
-      })
-      .eq("status", "published")
-      .order("published_at", { ascending: false })
-      .range(page * PER_PAGE, page * PER_PAGE + PER_PAGE - 1);
-    if (cat !== "all") q = q.eq("categoria_id", cat);
-    q.then(({ data, error, count }) => {
-      if (!error) {
-        setPosts((data ?? []) as Post[]);
-        setTotal(count ?? 0);
+    async function loadPosts() {
+      setLoading(true);
+      try {
+        let q = supabase
+          .from("posts")
+          .select("id, titulo, slug, resumo, imagem_url, autor, published_at, categoria_id", {
+            count: "exact",
+          })
+          .eq("status", "published")
+          .order("published_at", { ascending: false })
+          .range(page * PER_PAGE, page * PER_PAGE + PER_PAGE - 1);
+        if (cat !== "all") q = q.eq("categoria_id", cat);
+        const { data, error, count } = await q;
+        if (!error && data) {
+          setPosts(data as Post[]);
+          setTotal(count ?? 0);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar notícias:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    }
+    loadPosts();
   }, [cat, page]);
 
   const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));

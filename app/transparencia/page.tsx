@@ -21,13 +21,13 @@ type RecordRow = {
   situacao: string | null;
   ano_referencia: number | null;
   data_publicacao: string | null;
-  periodo_bimestral: string | null;
-  mes_referencia: number | null;
-  exercicio_fiscal: string | null;
-  descricao_resumida: string | null;
-  dados_identificacao: Record<string, unknown> | null;
-  link_original: string | null;
-  documents: Doc[] | null;
+  periodo_bimestral?: string | null;
+  mes_referencia?: number | null;
+  exercicio_fiscal?: string | null;
+  descricao_resumida?: string | null;
+  dados_identificacao?: Record<string, unknown> | null;
+  link_original?: string | null;
+  documents?: Doc[] | null;
 };
 
 const TIPO: Record<string, string> = {
@@ -93,16 +93,25 @@ export default function TransparenciaPage() {
   });
 
   useEffect(() => {
-    supabase
-      .from("transparency_records")
-      .select("id, titulo, descricao, instituicao_origem, tipo, numero_processo, valor, data_recebimento, periodo_execucao_inicio, periodo_execucao_fim, finalidade, situacao, ano_referencia, data_publicacao, periodo_bimestral, mes_referencia, exercicio_fiscal, descricao_resumida, dados_identificacao:transparency_dados_identificacao, link_original, documents:transparency_documents(id, titulo, file_url, file_name, tipo_documento)")
-      .eq("status", "published")
-      .order("data_recebimento", { ascending: false })
-      .order("ano_referencia", { ascending: false })
-      .then(({ data, error }) => {
-        if (!error) setRows((data ?? []) as RecordRow[]);
+    async function loadRecords() {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("transparency_records")
+          .select("id, titulo, descricao, instituicao_origem, tipo, numero_processo, valor, data_recebimento, periodo_execucao_inicio, periodo_execucao_fim, finalidade, situacao, ano_referencia, data_publicacao, status, created_at")
+          .eq("status", "published")
+          .order("data_recebimento", { ascending: false })
+          .order("ano_referencia", { ascending: false });
+        if (!error && data) {
+          setRows(data as unknown as RecordRow[]);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar transparência:", err);
+      } finally {
         setLoading(false);
-      });
+      }
+    }
+    loadRecords();
   }, []);
 
   const years = Array.from(new Set(rows.map((r) => r.ano_referencia).filter((y): y is number => y !== null))).sort(

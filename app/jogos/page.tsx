@@ -39,21 +39,36 @@ export default function JogosPage() {
   }, []);
 
   useEffect(() => {
-    const base = () =>
-      supabase
-        .from("games")
-        .select("id, adversario, escudo_adversario_url, fase_rodada, data_jogo, local, cidade, casa_fora, status, placar_nosso, placar_adversario, link_transmissao, competicao:competicao_id(nome)")
-        .order("data_jogo", { ascending: false });
+    async function loadGames() {
+      setLoading(true);
+      try {
+        let upQuery = supabase
+          .from("games")
+          .select("id, adversario, escudo_adversario_url, fase_rodada, data_jogo, local, cidade, casa_fora, status, placar_nosso, placar_adversario, link_transmissao, competicao:competitions(nome)")
+          .in("status", ["agendado", "andamento"])
+          .order("data_jogo", { ascending: true });
 
-    let up = base().in("status", ["agendado", "andamento"]).order("data_jogo", { ascending: true });
-    let fin = base().eq("status", "encerrado");
-    if (cat !== "all") {
-      up = up.eq("categoria_id", cat);
-      fin = fin.eq("categoria_id", cat);
+        let finQuery = supabase
+          .from("games")
+          .select("id, adversario, escudo_adversario_url, fase_rodada, data_jogo, local, cidade, casa_fora, status, placar_nosso, placar_adversario, link_transmissao, competicao:competitions(nome)")
+          .eq("status", "encerrado")
+          .order("data_jogo", { ascending: false });
+
+        if (cat !== "all") {
+          upQuery = upQuery.eq("categoria_id", cat);
+          finQuery = finQuery.eq("categoria_id", cat);
+        }
+
+        const [upRes, finRes] = await Promise.all([upQuery, finQuery]);
+        if (!upRes.error && upRes.data) setUpcoming(upRes.data as unknown as Game[]);
+        if (!finRes.error && finRes.data) setFinished(finRes.data as unknown as Game[]);
+      } catch (err) {
+        console.error("Erro ao carregar jogos:", err);
+      } finally {
+        setLoading(false);
+      }
     }
-    up.then(({ data }) => setUpcoming((data ?? []) as unknown as Game[]));
-    fin.then(({ data }) => setFinished((data ?? []) as unknown as Game[]));
-    Promise.all([up, fin]).then(() => setLoading(false));
+    loadGames();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cat]);
 

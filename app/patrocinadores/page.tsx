@@ -124,23 +124,29 @@ export default function PatrocinadoresPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase
-      .from("sponsor_categories")
-      .select("id, nome, ordem, sponsors(id, nome, logo_url, website, descricao, destaque)")
-      .eq("ativo", true)
-      .eq("sponsors.ativo", true)
-      .order("ordem")
-      .then(({ data, error }) => {
-        if (!error) {
+    async function loadSponsors() {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("sponsor_categories")
+          .select("id, nome, ordem, sponsors(id, nome, logo_url, website, descricao, destaque)")
+          .eq("ativo", true)
+          .order("ordem");
+        if (!error && data) {
           setGroups(
-            ((data ?? []) as SponsorGroup[]).map((g) => ({
+            (data as SponsorGroup[]).map((g) => ({
               ...g,
               sponsors: (g.sponsors ?? []).sort((a, b) => Number(b.destaque) - Number(a.destaque)),
             })),
           );
         }
+      } catch (err) {
+        console.error("Erro ao carregar patrocinadores:", err);
+      } finally {
         setLoading(false);
-      });
+      }
+    }
+    loadSponsors();
     supabase
       .from("site_settings")
       .select("valor")

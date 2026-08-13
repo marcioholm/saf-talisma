@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import NewsletterForm from "../components/newsletter-form";
+import { SiteHeader, SiteFooter } from "../components/site-shell";
 import { supabase } from "../lib/supabase";
 import {
   mergeDestaque,
@@ -63,8 +63,6 @@ function Lines({ text, emLast = false }: { text: string; emLast?: boolean }) {
 }
 
 export default function Home() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("inicio");
   const [destaque, setDestaque] = useState<HomeDestaque | null>(null);
   const [evento, setEvento] = useState<HomeEvento | null>(null);
 
@@ -79,53 +77,9 @@ export default function Home() {
       });
   }, []);
 
-  useEffect(() => {
-    const sections = ["inicio", "jogos", "noticias", "categorias", "historia", "parceiros"]
-      .map((id) => document.getElementById(id))
-      .filter((el): el is HTMLElement => el !== null);
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-          }
-        }
-      },
-      { rootMargin: "-40% 0px -55% 0px" }
-    );
-
-    sections.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
-  }, []);
-
-  const isActive = (id: string) => activeSection === id;
-
   return (
     <main>
-      <div className="topline">
-        <div className="shell topline-inner">
-          <span>O clube do Norte Pioneiro</span>
-          <div><a href="#historia">Institucional</a><a href="#parceiros">Seja parceiro</a></div>
-        </div>
-      </div>
-
-      <header className="header">
-        <div className="shell header-main">
-          <a href="#inicio" className="brand"><Mark /></a>
-          <button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label="Abrir menu" aria-expanded={menuOpen}>
-            <span /><span /><span />
-          </button>
-          <nav className={menuOpen ? "nav nav-open" : "nav"} aria-label="Navegação principal">
-            <a href="#noticias" className={isActive("noticias") ? "active" : ""} onClick={() => setMenuOpen(false)}>Notícias</a>
-            <a href="#jogos" className={isActive("jogos") ? "active" : ""} onClick={() => setMenuOpen(false)}>Jogos</a>
-            <a href="#categorias" className={isActive("categorias") ? "active" : ""} onClick={() => setMenuOpen(false)}>Categorias</a>
-            <a href="#historia" className={isActive("historia") ? "active" : ""} onClick={() => setMenuOpen(false)}>O clube</a>
-            <a href="#parceiros" className={isActive("parceiros") ? "active" : ""} onClick={() => setMenuOpen(false)}>Patrocinadores</a>
-          </nav>
-          <a className="partner-button" href="#parceiros">Seja parceiro <span>↗</span></a>
-        </div>
-      </header>
+      <SiteHeader active="/" />
 
       {(evento ?? DEFAULT_HOME_EVENTO).exibir && (
         <section className="score-strip" id="jogos">
@@ -162,7 +116,7 @@ export default function Home() {
             <a href={(destaque ?? DEFAULT_HOME_DESTAQUE).botao_link} className="button button-green">
               {(destaque ?? DEFAULT_HOME_DESTAQUE).botao_texto}
             </a>
-            <a href="#noticias" className="text-link">Últimas notícias <span>→</span></a>
+            <Link href="/noticias" className="text-link">Últimas notícias <span>→</span></Link>
           </div>
           <div className="hero-number">
             {(destaque ?? DEFAULT_HOME_DESTAQUE).numero}
@@ -178,7 +132,7 @@ export default function Home() {
           {news.map((item, index) => (
             <article key={item.title} className={item.className}>
               <div className="news-art"><span className="art-number">0{index + 1}</span><div className="court-lines" /></div>
-              <div className="news-content"><span className="news-tag">{item.tag}</span><h3>{item.title}</h3><p>{item.text}</p><div className="news-meta"><span>29 de julho de 2026</span><b>Leia mais →</b></div></div>
+              <div className="news-content"><span className="news-tag">{item.tag}</span><h3>{item.title}</h3><p>{item.text}</p><div className="news-meta"><span>29 de julho de 2026</span><Link href="/noticias">Leia mais →</Link></div></div>
             </article>
           ))}
         </div>
@@ -194,15 +148,16 @@ export default function Home() {
       <section className="categories shell" id="categorias">
         <div className="section-heading"><div><span>NOSSAS EQUIPES</span><h2>Uma base forte.<br />Um futuro gigante.</h2></div><p>Desenvolvimento esportivo e humano em todas as fases da formação.</p></div>
         <div className="category-grid">
-          {[['01','SUB-13','Primeiros passos, grandes sonhos.'],['02','SUB-15','Talento que ganha forma.'],['03','ADULTO','Nossa força em quadra.'],['04','FEMININO','Elas mudam o jogo.']].map(([num,title,text]) => <article key={title}><span data-num={num}>{num}</span><h3>{title}</h3><p>{text}</p><b>CONHEÇA A EQUIPE →</b></article>)}
+          {[['01','SUB-13','Primeiros passos, grandes sonhos.'],['02','SUB-15','Talento que ganha forma.'],['03','ADULTO','Nossa força em quadra.'],['04','FEMININO','Elas mudam o jogo.']].map(([num,title,text]) => <article key={title}><span data-num={num}>{num}</span><h3>{title}</h3><p>{text}</p><Link href="/sobre">CONHEÇA A EQUIPE →</Link></article>)}
         </div>
       </section>
 
-      <section className="story" id="historia"><div className="shell story-grid"><div className="story-visual"><span className="year">2009</span><div className="crest-ghost"><Mark /></div></div><div className="story-copy"><span className="label">NOSSA HISTÓRIA</span><h2>Nascemos para<br />transformar vidas.</h2><p>A SAF Talismã é mais do que um clube de futsal. É um projeto de formação esportiva e humana que acredita no poder do esporte para abrir caminhos.</p><p>Há 17 anos, desenvolvemos atletas com disciplina, respeito e espírito de equipe — dentro e fora das quadras.</p><div className="stats"><div><strong>200+</strong><span>ATLETAS</span></div><div><strong>4</strong><span>CATEGORIAS</span></div><div><strong>50+</strong><span>TÍTULOS</span></div></div><a className="button button-green" href="#historia">Conheça o projeto</a></div></div></section>
+      <section className="story" id="historia"><div className="shell story-grid"><div className="story-visual"><span className="year">2009</span><div className="crest-ghost"><Mark /></div></div><div className="story-copy"><span className="label">NOSSA HISTÓRIA</span><h2>Nascemos para<br />transformar vidas.</h2><p>A SAF Talismã é mais do que um clube de futsal. É um projeto de formação esportiva e humana que acredita no poder do esporte para abrir caminhos.</p><p>Há 17 anos, desenvolvemos atletas com disciplina, respeito e espírito de equipe — dentro e fora das quadras.</p><div className="stats"><div><strong>200+</strong><span>ATLETAS</span></div><div><strong>4</strong><span>CATEGORIAS</span></div><div><strong>50+</strong><span>TÍTULOS</span></div></div><Link className="button button-green" href="/sobre">Conheça o projeto</Link></div></div></section>
 
-      <section className="partners shell" id="parceiros"><span className="label">QUEM ACREDITA NO NOSSO JOGO</span><h2>Parceiros do Talismã</h2><div className="partner-grid"><div>MASTER<br /><strong>PARCEIRO</strong></div><div>NORTE<br /><strong>PIONEIRO</strong></div><div>WENCESLAU<br /><strong>BRAZ</strong></div><div>SUA MARCA<br /><strong>AQUI</strong></div></div><a className="partner-cta" href="mailto:contato@saftalisma.com.br">Quero ser parceiro <span>→</span></a></section>
+      <section className="partners shell" id="parceiros"><span className="label">QUEM ACREDITA NO NOSSO JOGO</span><h2>Parceiros do Talismã</h2><div className="partner-grid"><div>MASTER<br /><strong>PARCEIRO</strong></div><div>NORTE<br /><strong>PIONEIRO</strong></div><div>WENCESLAU<br /><strong>BRAZ</strong></div><div>SUA MARCA<br /><strong>AQUI</strong></div></div><Link className="partner-cta" href="/patrocinadores">Quero ser parceiro <span>→</span></Link></section>
 
-      <footer id="social"><div className="newsletter-strip"><div className="shell newsletter-inner"><NewsletterForm /></div></div><div className="shell footer-grid"><div><Mark /><p>Futsal, formação e futuro.<br />De Wenceslau Braz para o mundo.</p></div><div><strong>CLUBE</strong><a href="#historia">Nossa história</a><a href="#categorias">Categorias</a><a href="#jogos">Jogos</a></div><div><strong>ACOMPANHE</strong><a href="#noticias">Notícias</a><a href="#social">Instagram</a><a href="#social">Facebook</a></div><div><strong>CONTATO</strong><span>Wenceslau Braz · Paraná</span><a className="footer-contact" href="mailto:contato@saftalisma.com.br">contato@saftalisma.com.br</a></div></div><div className="shell footer-bottom"><span>© 2026 SAF Talismã. Todos os direitos reservados.</span><span>FEITO COM RAÇA NO NORTE PIONEIRO.</span></div></footer>
+      <SiteFooter />
     </main>
   );
 }
+

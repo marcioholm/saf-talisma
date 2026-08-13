@@ -28,25 +28,31 @@ export default function SobrePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase
-      .from("institutional_content")
-      .select("chave, conteudo")
-      .then(({ data, error }) => {
-        if (!error) {
+    async function loadAboutData() {
+      setLoading(true);
+      try {
+        const { data: instData } = await supabase
+          .from("institutional_content")
+          .select("chave, conteudo");
+        if (instData) {
           const map: Record<string, Content> = {};
-          for (const row of data ?? []) map[row.chave] = row as Content;
+          for (const row of instData) map[row.chave] = row as Content;
           setContent(map);
         }
-      });
-    supabase
-      .from("sports_categories")
-      .select("id, nome, descricao, players(nome, apelido, posicao, numero, foto_url), staff(nome, funcao)")
-      .eq("ativo", true)
-      .order("ordem")
-      .then(({ data, error }) => {
-        if (!error) setTeams((data ?? []) as SportCat[]);
+
+        const { data: catData } = await supabase
+          .from("sports_categories")
+          .select("id, nome, descricao")
+          .eq("ativo", true)
+          .order("ordem");
+        if (catData) setTeams(catData as SportCat[]);
+      } catch (err) {
+        console.error("Erro ao carregar sobre:", err);
+      } finally {
         setLoading(false);
-      });
+      }
+    }
+    loadAboutData();
   }, []);
 
   const historia = text(content.historia?.conteudo?.historia ?? content.historia?.conteudo?.texto);
