@@ -1,8 +1,5 @@
-"use client";
-
-import { useState, useEffect } from "react";
 import Link from "next/link";
-import { supabase, supabaseUrl, supabaseAnonKey, publicFileUrl } from "../../lib/supabase";
+import { supabaseUrl, supabaseAnonKey, publicFileUrl } from "../../lib/supabase";
 import { SiteHeader, SiteFooter } from "../../components/site-shell";
 import "../public.css";
 
@@ -18,66 +15,50 @@ type Post = {
   published_at: string;
 };
 
-const PER_PAGE = 9;
-
-export default function NoticiasPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [total, setTotal] = useState(0);
-  const [cat, setCat] = useState("all");
-  const [page, setPage] = useState(0);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    supabase.from("post_categories").select("id, nome, slug").order("ordem").then(({ data, error }) => {
-      if (!error) setCategories((data ?? []) as Category[]);
-    });
-  }, []);
-
-  useEffect(() => {
-    async function loadPosts() {
-      setLoading(true);
-      try {
-        let q = supabase
-          .from("posts")
-          .select("id, titulo, slug, resumo, imagem_url, autor, published_at, categoria_id", {
-            count: "exact",
-          })
-          .eq("status", "published")
-          .order("published_at", { ascending: false })
-          .range(page * PER_PAGE, page * PER_PAGE + PER_PAGE - 1);
-        if (cat !== "all") q = q.eq("categoria_id", cat);
-        const { data, error, count } = await q;
-
-        if (!error && data && data.length > 0) {
-          setPosts(data as Post[]);
-          setTotal(count ?? data.length);
-        } else {
-          // Fallback HTTP direto para a REST API do Supabase
-          const catFilter = cat !== "all" ? `&categoria_id=eq.${cat}` : "";
-          const fetchUrl = `${supabaseUrl}/rest/v1/posts?select=id,titulo,slug,resumo,imagem_url,autor,published_at,categoria_id&status=eq.published&order=published_at.desc&offset=${page * PER_PAGE}&limit=${PER_PAGE}${catFilter}`;
-          const res = await fetch(fetchUrl, {
-            headers: {
-              apikey: supabaseAnonKey,
-              Authorization: `Bearer ${supabaseAnonKey}`,
-            },
-          });
-          if (res.ok) {
-            const listData = await res.json();
-            setPosts((listData ?? []) as Post[]);
-            setTotal((listData ?? []).length);
-          }
-        }
-      } catch (err) {
-        console.error("Erro ao carregar notícias:", err);
-      } finally {
-        setLoading(false);
+async function getCategories(): Promise<Category[]> {
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/post_categories?select=id,nome,slug&order=ordem.asc`,
+      {
+        headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
+        next: { revalidate: 60 },
       }
-    }
-    loadPosts();
-  }, [cat, page]);
+    );
+    if (res.ok) return await res.json();
+  } catch (e) {
+    console.error("Erro ao buscar categorias:", e);
+  }
+  return [];
+}
 
-  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+async function getPosts(catId?: string): Promise<Post[]> {
+  try {
+    const filter = catId && catId !== "all" ? `&categoria_id=eq.${catId}` : "";
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/posts?select=id,titulo,slug,resumo,imagem_url,autor,published_at,categoria_id&status=eq.published&order=published_at.desc${filter}`,
+      {
+        headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
+        next: { revalidate: 60 },
+      }
+    );
+    if (res.ok) return await res.json();
+  } catch (e) {
+    console.error("Erro ao buscar notícias:", e);
+  }
+  return [];
+}
+
+export default async function NoticiasPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ cat?: string }>;
+}) {
+  const params = await searchParams;
+  const currentCat = params?.cat || "all";
+  const [categories, posts] = await Promise.all([
+    getCategories(),
+    getPosts(currentCat),
+  ]);
 
   return (
     <main className="page-body">
@@ -95,23 +76,24 @@ export default function NoticiasPage() {
       <section className="page-section">
         <div className="shell">
           <div className="chip-bar">
-            <button className={`chip ${cat === "all" ? "active" : ""}`} onClick={() => { setCat("all"); setPage(0); }}>
+            <Link
+              href="/noticias"
+              className={`chip ${currentCat === "all" ? "active" : ""}`}
+            >
               Todas
-            </button>
+            </Link>
             {categories.map((c) => (
-              <button
+              <Link
                 key={c.id}
-                className={`chip ${cat === c.id ? "active" : ""}`}
-                onClick={() => { setCat(c.id); setPage(0); }}
+                href={`/noticias?cat=${c.id}`}
+                className={`chip ${currentCat === c.id ? "active" : ""}`}
               >
                 {c.nome}
-              </button>
+              </Link>
             ))}
           </div>
 
-          {loading ? (
-            <div className="empty">Carregando notícias…</div>
-          ) : posts.length === 0 ? (
+          {posts.length === 0 ? (
             <div className="empty">
               <strong>Nenhuma notícia publicada ainda</strong>
               Volte em breve para acompanhar as novidades do clube.
@@ -127,13 +109,19 @@ export default function NoticiasPage() {
                     {!p.imagem_url && <div className="news-thumb-fallback">SAF</div>}
                   </div>
                   <div className="news-body">
-                    <span className="news-tag">{categories.find((c) => c.id === p.categoria_id)?.nome ?? "Notícias"}</span>
+                    <span className="news-tag">
+                      {categories.find((c) => c.id === p.categoria_id)?.nome ?? "Notícias"}
+                    </span>
                     <h3>{p.titulo}</h3>
                     {p.resumo && <p>{p.resumo}</p>}
                     <div className="news-meta">
                       <span>
                         {p.published_at
-                          ? new Date(p.published_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
+                          ? new Date(p.published_at).toLocaleDateString("pt-BR", {
+                              day: "2-digit",
+                              month: "long",
+                              year: "numeric",
+                            })
                           : ""}
                       </span>
                       <b>Ler notícia →</b>
@@ -141,22 +129,6 @@ export default function NoticiasPage() {
                   </div>
                 </Link>
               ))}
-            </div>
-          )}
-
-          {totalPages > 1 && (
-            <div className="page-pagination">
-              <button disabled={page === 0} onClick={() => setPage(page - 1)}>
-                ← Anterior
-              </button>
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <button key={i} className={i === page ? "active" : ""} onClick={() => setPage(i)}>
-                  {i + 1}
-                </button>
-              ))}
-              <button disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}>
-                Próxima →
-              </button>
             </div>
           )}
         </div>

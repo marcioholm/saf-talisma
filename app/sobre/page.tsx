@@ -1,8 +1,5 @@
-"use client";
-
-import { useState, useEffect } from "react";
 import { SiteHeader, SiteFooter } from "../../components/site-shell";
-import { supabase, publicFileUrl } from "../../lib/supabase";
+import { supabaseUrl, supabaseAnonKey, publicFileUrl } from "../../lib/supabase";
 import "../public.css";
 
 type Content = { chave: string; conteudo: Record<string, unknown> };
@@ -22,38 +19,48 @@ function list(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((x): x is string => typeof x === "string") : [];
 }
 
-export default function SobrePage() {
-  const [content, setContent] = useState<Record<string, Content>>({});
-  const [teams, setTeams] = useState<SportCat[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadAboutData() {
-      setLoading(true);
-      try {
-        const { data: instData } = await supabase
-          .from("institutional_content")
-          .select("chave, conteudo");
-        if (instData) {
-          const map: Record<string, Content> = {};
-          for (const row of instData) map[row.chave] = row as Content;
-          setContent(map);
-        }
-
-        const { data: catData } = await supabase
-          .from("sports_categories")
-          .select("id, nome, descricao")
-          .eq("ativo", true)
-          .order("ordem");
-        if (catData) setTeams(catData as SportCat[]);
-      } catch (err) {
-        console.error("Erro ao carregar sobre:", err);
-      } finally {
-        setLoading(false);
+async function getContentMap(): Promise<Record<string, Content>> {
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/institutional_content?select=chave,conteudo`,
+      {
+        headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
+        next: { revalidate: 60 },
       }
+    );
+    if (res.ok) {
+      const rows = await res.json();
+      const map: Record<string, Content> = {};
+      for (const r of rows) map[r.chave] = r as Content;
+      return map;
     }
-    loadAboutData();
-  }, []);
+  } catch (e) {
+    console.error("Erro ao carregar conteúdo institucional:", e);
+  }
+  return {};
+}
+
+async function getTeams(): Promise<SportCat[]> {
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/sports_categories?select=id,nome,descricao&ativo=eq.true&order=ordem.asc`,
+      {
+        headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
+        next: { revalidate: 60 },
+      }
+    );
+    if (res.ok) return await res.json();
+  } catch (e) {
+    console.error("Erro ao carregar equipes:", e);
+  }
+  return [];
+}
+
+export default async function SobrePage() {
+  const [content, teams] = await Promise.all([
+    getContentMap(),
+    getTeams(),
+  ]);
 
   const historia = text(content.historia?.conteudo?.historia ?? content.historia?.conteudo?.texto);
   const missao = text(content.missao?.conteudo?.missao ?? content.missao?.conteudo?.texto);
@@ -83,9 +90,7 @@ export default function SobrePage() {
               <h2>Nossa história</h2>
             </div>
           </div>
-          {loading ? (
-            <div className="empty">Carregando…</div>
-          ) : historia ? (
+          {historia ? (
             historia
               .split(/\n\s*\n/)
               .filter(Boolean)
@@ -156,9 +161,7 @@ export default function SobrePage() {
             <p>Desenvolvimento esportivo e humano em todas as fases da formação.</p>
           </div>
 
-          {loading ? (
-            <div className="empty">Carregando elencos…</div>
-          ) : teams.length === 0 ? (
+          {teams.length === 0 ? (
             <div className="empty">
               <strong>Elenco em divulgação</strong>
             </div>

@@ -1,8 +1,6 @@
-"use client";
-
-import { useState, useEffect } from "react";
+import Link from "next/link";
 import { SiteHeader, SiteFooter } from "../../components/site-shell";
-import { supabase, publicFileUrl } from "../../lib/supabase";
+import { supabaseUrl, supabaseAnonKey, publicFileUrl } from "../../lib/supabase";
 import "../public.css";
 
 type SportCategory = { id: string; nome: string };
@@ -25,121 +23,134 @@ type Game = {
 const WEEKDAYS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
 const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
-export default function JogosPage() {
-  const [categories, setCategories] = useState<SportCategory[]>([]);
-  const [upcoming, setUpcoming] = useState<Game[]>([]);
-  const [finished, setFinished] = useState<Game[]>([]);
-  const [cat, setCat] = useState("all");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    supabase.from("sports_categories").select("id, nome").order("ordem").then(({ data, error }) => {
-      if (!error) setCategories((data ?? []) as SportCategory[]);
-    });
-  }, []);
-
-  useEffect(() => {
-    async function loadGames() {
-      setLoading(true);
-      try {
-        let upQuery = supabase
-          .from("games")
-          .select("id, adversario, escudo_adversario_url, fase_rodada, data_jogo, local, cidade, casa_fora, status, placar_nosso, placar_adversario, link_transmissao, competicao:competitions(nome)")
-          .in("status", ["agendado", "andamento"])
-          .order("data_jogo", { ascending: true });
-
-        let finQuery = supabase
-          .from("games")
-          .select("id, adversario, escudo_adversario_url, fase_rodada, data_jogo, local, cidade, casa_fora, status, placar_nosso, placar_adversario, link_transmissao, competicao:competitions(nome)")
-          .eq("status", "encerrado")
-          .order("data_jogo", { ascending: false });
-
-        if (cat !== "all") {
-          upQuery = upQuery.eq("categoria_id", cat);
-          finQuery = finQuery.eq("categoria_id", cat);
-        }
-
-        const [upRes, finRes] = await Promise.all([upQuery, finQuery]);
-        if (!upRes.error && upRes.data) setUpcoming(upRes.data as unknown as Game[]);
-        if (!finRes.error && finRes.data) setFinished(finRes.data as unknown as Game[]);
-      } catch (err) {
-        console.error("Erro ao carregar jogos:", err);
-      } finally {
-        setLoading(false);
+async function getCategories(): Promise<SportCategory[]> {
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/sports_categories?select=id,nome&order=ordem.asc`,
+      {
+        headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
+        next: { revalidate: 60 },
       }
-    }
-    loadGames();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cat]);
-
-  function formatDate(iso: string): string {
-    const d = new Date(iso);
-    const day = String(d.getDate()).padStart(2, "0");
-    const month = MONTHS[d.getMonth()];
-    const year = d.getFullYear();
-    const time = `${String(d.getHours()).padStart(2, "0")}h${String(d.getMinutes()).padStart(2, "0")}`;
-    return `${WEEKDAYS[d.getDay()]} · ${day} ${month} ${year} · ${time}`;
+    );
+    if (res.ok) return await res.json();
+  } catch (e) {
+    console.error("Erro ao carregar categorias esportivas:", e);
   }
+  return [];
+}
 
-  function GameCard({ g }: { g: Game }) {
-    const encerrado = g.status === "encerrado";
-    const win = encerrado && (g.placar_nosso ?? 0) > (g.placar_adversario ?? 0);
-    const loss = encerrado && (g.placar_nosso ?? 0) < (g.placar_adversario ?? 0);
-    return (
-      <div className="game-card">
-        <div className="game-top">
-          <span>
-            {g.competicao?.nome ?? "Jogo"} {g.fase_rodada ? ` · ${g.fase_rodada}` : ""}
-          </span>
-          <b>
-            {g.casa_fora === "casa" ? "EM CASA" : "FORA DE CASA"}
-          </b>
+async function getUpcomingGames(catId?: string): Promise<Game[]> {
+  try {
+    const filter = catId && catId !== "all" ? `&categoria_id=eq.${catId}` : "";
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/games?select=id,adversario,escudo_adversario_url,fase_rodada,data_jogo,local,cidade,casa_fora,status,placar_nosso,placar_adversario,link_transmissao,competicao:competitions(nome)&status=in.(agendado,andamento)&order=data_jogo.asc${filter}`,
+      {
+        headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
+        next: { revalidate: 60 },
+      }
+    );
+    if (res.ok) return await res.json();
+  } catch (e) {
+    console.error("Erro ao carregar próximos jogos:", e);
+  }
+  return [];
+}
+
+async function getFinishedGames(catId?: string): Promise<Game[]> {
+  try {
+    const filter = catId && catId !== "all" ? `&categoria_id=eq.${catId}` : "";
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/games?select=id,adversario,escudo_adversario_url,fase_rodada,data_jogo,local,cidade,casa_fora,status,placar_nosso,placar_adversario,link_transmissao,competicao:competitions(nome)&status=eq.encerrado&order=data_jogo.desc${filter}`,
+      {
+        headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
+        next: { revalidate: 60 },
+      }
+    );
+    if (res.ok) return await res.json();
+  } catch (e) {
+    console.error("Erro ao carregar jogos encerrados:", e);
+  }
+  return [];
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = MONTHS[d.getMonth()];
+  const year = d.getFullYear();
+  const time = `${String(d.getHours()).padStart(2, "0")}h${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${WEEKDAYS[d.getDay()]} · ${day} ${month} ${year} · ${time}`;
+}
+
+function GameCard({ g }: { g: Game }) {
+  const encerrado = g.status === "encerrado";
+  const win = encerrado && (g.placar_nosso ?? 0) > (g.placar_adversario ?? 0);
+  const loss = encerrado && (g.placar_nosso ?? 0) < (g.placar_adversario ?? 0);
+  return (
+    <div className="game-card">
+      <div className="game-top">
+        <span>
+          {g.competicao?.nome ?? "Jogo"} {g.fase_rodada ? ` · ${g.fase_rodada}` : ""}
+        </span>
+        <b>{g.casa_fora === "casa" ? "EM CASA" : "FORA DE CASA"}</b>
+      </div>
+      <div className="game-teams">
+        <div className="game-team">
+          <div className="opponent-mark" style={{ background: "#D200D2", color: "#fff" }}>
+            SAF
+          </div>
+          Talismã
         </div>
-        <div className="game-teams">
-          <div className="game-team">
-            <div className="opponent-mark" style={{ background: "#D200D2", color: "#fff" }}>
-              SAF
-            </div>
-            Talismã
-          </div>
-          <div className={`game-score ${win ? "is-win" : loss ? "is-loss" : ""}`}>
-            {encerrado ? (
-              <>
-                {g.placar_nosso} × {g.placar_adversario}
-                <small>{win ? "VITÓRIA" : loss ? "DERROTA" : "EMPATE"}</small>
-              </>
-            ) : (
-              <>
-                VS
-                <small>{g.status === "andamento" ? "AO VIVO" : "EM BREVE"}</small>
-              </>
-            )}
-          </div>
-          <div className="game-team">
-            <div className="opponent-mark">
-              {g.escudo_adversario_url ? (
-                <img src={publicFileUrl(g.escudo_adversario_url)} alt={g.adversario} />
-              ) : (
-                g.adversario.slice(0, 3).toUpperCase()
-              )}
-            </div>
-            {g.adversario}
-          </div>
-        </div>
-        <div className="game-bottom">
-          <span>{formatDate(g.data_jogo)}</span>
-          <span>
-            {[g.local, g.cidade].filter(Boolean).join(" · ") || "Local a definir"}
-          </span>
-          {g.link_transmissao && (
-            <a href={g.link_transmissao} target="_blank" rel="noreferrer">
-              Assistir transmissão →
-            </a>
+        <div className={`game-score ${win ? "is-win" : loss ? "is-loss" : ""}`}>
+          {encerrado ? (
+            <>
+              {g.placar_nosso} × {g.placar_adversario}
+              <small>{win ? "VITÓRIA" : loss ? "DERROTA" : "EMPATE"}</small>
+            </>
+          ) : (
+            <>
+              VS
+              <small>{g.status === "andamento" ? "AO VIVO" : "EM BREVE"}</small>
+            </>
           )}
         </div>
+        <div className="game-team">
+          <div className="opponent-mark">
+            {g.escudo_adversario_url ? (
+              <img src={publicFileUrl(g.escudo_adversario_url)} alt={g.adversario} />
+            ) : (
+              g.adversario.slice(0, 3).toUpperCase()
+            )}
+          </div>
+          {g.adversario}
+        </div>
       </div>
-    );
-  }
+      <div className="game-bottom">
+        <span>{formatDate(g.data_jogo)}</span>
+        <span>{[g.local, g.cidade].filter(Boolean).join(" · ") || "Local a definir"}</span>
+        {g.link_transmissao && (
+          <a href={g.link_transmissao} target="_blank" rel="noreferrer">
+            Assistir transmissão →
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default async function JogosPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ cat?: string }>;
+}) {
+  const params = await searchParams;
+  const currentCat = params?.cat || "all";
+
+  const [categories, upcoming, finished] = await Promise.all([
+    getCategories(),
+    getUpcomingGames(currentCat),
+    getFinishedGames(currentCat),
+  ]);
 
   return (
     <main className="page-body">
@@ -157,46 +168,42 @@ export default function JogosPage() {
       <section className="page-section">
         <div className="shell">
           <div className="chip-bar">
-            <button className={`chip ${cat === "all" ? "active" : ""}`} onClick={() => setCat("all")}>
+            <Link className={`chip ${currentCat === "all" ? "active" : ""}`} href="/jogos">
               Todas as equipes
-            </button>
+            </Link>
             {categories.map((c) => (
-              <button key={c.id} className={`chip ${cat === c.id ? "active" : ""}`} onClick={() => setCat(c.id)}>
+              <Link key={c.id} className={`chip ${currentCat === c.id ? "active" : ""}`} href={`/jogos?cat=${c.id}`}>
                 {c.nome}
-              </button>
+              </Link>
             ))}
           </div>
 
-          {loading ? (
-            <div className="empty">Carregando jogos…</div>
-          ) : (
-            <div className="games-columns">
-              <div className="games-block">
-                <h2>
-                  Próximos <span>jogos</span>
-                </h2>
-                {upcoming.length === 0 ? (
-                  <div className="empty" style={{ padding: 28 }}>
-                    <strong>Nada agendado no momento</strong>
-                  </div>
-                ) : (
-                  upcoming.map((g) => <GameCard key={g.id} g={g} />)
-                )}
-              </div>
-              <div className="games-block">
-                <h2>
-                  Últimos <span>resultados</span>
-                </h2>
-                {finished.length === 0 ? (
-                  <div className="empty" style={{ padding: 28 }}>
-                    <strong>Nenhum resultado ainda</strong>
-                  </div>
-                ) : (
-                  finished.map((g) => <GameCard key={g.id} g={g} />)
-                )}
-              </div>
+          <div className="games-columns">
+            <div className="games-block">
+              <h2>
+                Próximos <span>jogos</span>
+              </h2>
+              {upcoming.length === 0 ? (
+                <div className="empty" style={{ padding: 28 }}>
+                  <strong>Nada agendado no momento</strong>
+                </div>
+              ) : (
+                upcoming.map((g) => <GameCard key={g.id} g={g} />)
+              )}
             </div>
-          )}
+            <div className="games-block">
+              <h2>
+                Últimos <span>resultados</span>
+              </h2>
+              {finished.length === 0 ? (
+                <div className="empty" style={{ padding: 28 }}>
+                  <strong>Nenhum resultado ainda</strong>
+                </div>
+              ) : (
+                finished.map((g) => <GameCard key={g.id} g={g} />)
+              )}
+            </div>
+          </div>
         </div>
       </section>
 

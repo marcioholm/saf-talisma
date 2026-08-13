@@ -1,8 +1,6 @@
-"use client";
-
-import { useState, useEffect } from "react";
+import Link from "next/link";
 import { SiteHeader, SiteFooter } from "../../components/site-shell";
-import { supabase, publicFileUrl } from "../../lib/supabase";
+import { supabaseUrl, supabaseAnonKey, publicFileUrl } from "../../lib/supabase";
 import "../public.css";
 
 type Doc = { id: string; titulo: string | null; file_url: string; file_name: string; tipo_documento: string };
@@ -58,75 +56,38 @@ const brl = (v: number | null) =>
     ? "—"
     : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
-interface BimestralFormData {
-  titulo: string;
-  descricao: string;
-  instituicao_origem: string;
-  tipo: keyof typeof TIPO;
-  mes_referencia: number;
-  exercicio_fiscal: string;
-  periodo_bimestral: "1º bimestre" | "2º bimestre" | "1-2º bimestres";
-  descricao_resumida: string;
-  dados_identificacao: string; // JSON string
-  link_original: string;
-  status: "published" | "draft";
+async function getRecords(): Promise<RecordRow[]> {
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/transparency_records?select=id,titulo,descricao,instituicao_origem,tipo,numero_processo,valor,data_recebimento,periodo_execucao_inicio,periodo_execucao_fim,finalidade,situacao,ano_referencia,data_publicacao,status,created_at&status=eq.published&order=data_recebimento.desc.nullslast,ano_referencia.desc.nullslast`,
+      {
+        headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
+        next: { revalidate: 60 },
+      }
+    );
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.error("Erro ao carregar transparência:", err);
+  }
+  return [];
 }
 
-export default function TransparenciaPage() {
-  const [rows, setRows] = useState<RecordRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [year, setYear] = useState("all");
-  const [bimestralFilter, setBimestralFilter] = useState<"all" | "1º bimestre" | "2º bimestre" | "1-2º bimestres">("all");
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState<BimestralFormData>({
-    titulo: "",
-    descricao: "",
-    instituicao_origem: "",
-    tipo: "relatorio",
-    mes_referencia: new Date().getMonth() + 1,
-    exercicio_fiscal: String(new Date().getFullYear()),
-    periodo_bimestral: "1º bimestre",
-    descricao_resumida: "",
-    dados_identificacao: "{}",
-    link_original: "",
-    status: "published",
-  });
-
-  useEffect(() => {
-    async function loadRecords() {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("transparency_records")
-          .select("id, titulo, descricao, instituicao_origem, tipo, numero_processo, valor, data_recebimento, periodo_execucao_inicio, periodo_execucao_fim, finalidade, situacao, ano_referencia, data_publicacao, status, created_at")
-          .eq("status", "published")
-          .order("data_recebimento", { ascending: false })
-          .order("ano_referencia", { ascending: false });
-        if (!error && data) {
-          setRows(data as unknown as RecordRow[]);
-        }
-      } catch (err) {
-        console.error("Erro ao carregar transparência:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadRecords();
-  }, []);
+export default async function TransparenciaPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ year?: string }>;
+}) {
+  const params = await searchParams;
+  const selectedYear = params?.year || "all";
+  const rows = await getRecords();
 
   const years = Array.from(new Set(rows.map((r) => r.ano_referencia).filter((y): y is number => y !== null))).sort(
     (a, b) => b - a,
   );
-  const filtered = year === "all" ? rows : rows.filter((r) => r.ano_referencia === Number(year));
+  const filtered = selectedYear === "all" ? rows : rows.filter((r) => String(r.ano_referencia) === selectedYear);
 
-  // Filtrar por bimestre
-  let filteredByBimestre = filtered;
-  if (bimestralFilter !== "all") {
-    filteredByBimestre = filtered.filter((r) => r.periodo_bimestral === bimestralFilter);
-  }
-
-  const totalValue = filteredByBimestre.reduce((acc, r) => acc + (r.valor ?? 0), 0);
-  const totalCount = filteredByBimestre.length;
+  const totalValue = filtered.reduce((acc, r) => acc + (r.valor ?? 0), 0);
+  const totalCount = filtered.length;
 
   return (
     <main className="page-body">
@@ -163,44 +124,25 @@ export default function TransparenciaPage() {
 
           {years.length > 1 && (
             <div className="chip-bar">
-              <button className={`chip ${year === "all" ? "active" : ""}`} onClick={() => setYear("all")}>
+              <Link className={`chip ${selectedYear === "all" ? "active" : ""}`} href="/transparencia">
                 Todos os anos
-              </button>
+              </Link>
               {years.map((y) => (
-                <button key={y} className={`chip ${year === String(y) ? "active" : ""}`} onClick={() => setYear(String(y))}>
+                <Link key={y} className={`chip ${selectedYear === String(y) ? "active" : ""}`} href={`/transparencia?year=${y}`}>
                   {y}
-                </button>
+                </Link>
               ))}
             </div>
           )}
 
-          {bimestralFilter !== "all" && (
-            <div className="chip-bar">
-              <button className="chip" onClick={() => setBimestralFilter("all")}>
-                Todos os bimestres
-              </button>
-              <button className={`chip ${bimestralFilter === "1º bimestre" ? "active" : ""}`} onClick={() => setBimestralFilter("1º bimestre")}>
-                1º bimestre
-              </button>
-              <button className={`chip ${bimestralFilter === "2º bimestre" ? "active" : ""}`} onClick={() => setBimestralFilter("2º bimestre")}>
-                2º bimestre
-              </button>
-              <button className={`chip ${bimestralFilter === "1-2º bimestres" ? "active" : ""}`} onClick={() => setBimestralFilter("1-2º bimestres")}>
-                1-2º bimestres
-              </button>
-            </div>
-          )}
-
-          {loading ? (
-            <div className="empty">Carregando registros…</div>
-          ) : filteredByBimestre.length === 0 ? (
+          {filtered.length === 0 ? (
             <div className="empty">
               <strong>Nenhum registro publicado ainda</strong>
               Os dados de convênios, repasses e prestações de contas aparecerão aqui assim que forem
               publicados.
             </div>
           ) : (
-            filteredByBimestre.map((r) => (
+            filtered.map((r) => (
               <details key={r.id} className="transparency-item">
                 <summary>
                   <div className="t-head">
@@ -283,142 +225,6 @@ export default function TransparenciaPage() {
               </details>
             ))
           )}
-
-          {/* Formulário de novo registro */}
-          {showForm && (
-            <div className="form-overlay">
-              <div className="form-card">
-                <h3>{formData.tipo === "bimestral" ? "Novo Relatório Bimestral" : "Novo Registro"}</h3>
-                <button onClick={() => setShowForm(false)} className="close-btn">×</button>
-                <form
-                  onSubmit={async (e: React.FormEvent) => {
-                    e.preventDefault();
-                    try {
-                      const { data, error } = await supabase
-                        .from("transparency_records")
-                        .insert({
-                          titulo: formData.titulo,
-                          descricao: formData.descricao,
-                          instituicao_origem: formData.instituicao_origem,
-                          tipo: formData.tipo,
-                          mes_referencia: formData.mes_referencia,
-                          exercicio_fiscal: formData.exercicio_fiscal,
-                          periodo_bimestral: formData.periodo_bimestral,
-                          descricao_resumida: formData.descricao_resumida,
-                          dados_identificacao: formData.dados_identificacao,
-                          link_original: formData.link_original,
-                          ano_referencia: formData.exercicio_fiscal ? parseInt(formData.exercicio_fiscal) : null,
-                          status: formData.status,
-                        })
-                        .select()
-                        .single();
-
-                      if (error) throw error;
-                      
-                      // Upload de arquivos anexos (se houver)
-                      // TODO: Implementar upload de files para transparência_bimestral_annexes
-                      
-                      setShowForm(false);
-                      setFormData({
-                        titulo: "",
-                        descricao: "",
-                        instituicao_origem: "",
-                        tipo: "relatorio",
-                        mes_referencia: new Date().getMonth() + 1,
-                        exercicio_fiscal: String(new Date().getFullYear()),
-                        periodo_bimestral: "1º bimestre",
-                        descricao_resumida: "",
-                        dados_identificacao: "{}",
-                        link_original: "",
-                        status: "published",
-                      });
-                      // Recarregar página
-                      window.location.reload();
-                    } catch (err) {
-                      console.error("Erro ao cadastrar registro:", err);
-                    }
-                  }}
-                >
-                  {/* Campos do formulário */}
-                  <div className="form-group">
-                    <label>Título</label>
-                    <input type="text" name="titulo" value={formData.titulo} onChange={(e) => setFormData({...formData, titulo: e.target.value})} required />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>Descrição</label>
-                    <textarea name="descricao" value={formData.descricao} onChange={(e) => setFormData({...formData, descricao: e.target.value})} rows={3} required></textarea>
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>Instituição de origem</label>
-                    <input type="text" name="instituicao_origem" value={formData.instituicao_origem} onChange={(e) => setFormData({...formData, instituicao_origem: e.target.value})} required />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>Tipo</label>
-                    <select name="tipo" value={formData.tipo} onChange={(e) => setFormData({...formData, tipo: e.target.value as keyof typeof TIPO})}>
-                      {Object.keys(TIPO).map((key) => (
-                        <option key={key} value={key}>{TIPO[key]}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>Exercício fiscal</label>
-                    <input type="number" name="exercicio_fiscal" value={formData.exercicio_fiscal} onChange={(e) => setFormData({...formData, exercicio_fiscal: e.target.value})} min={2000} max={2030} required />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>Período bimestral</label>
-                    <select name="periodo_bimestral" value={formData.periodo_bimestral} onChange={(e) => setFormData({...formData, periodo_bimestral: e.target.value as "1º bimestre" | "2º bimestre" | "1-2º bimestres"})}>
-                      <option value="1º bimestre">1º bimestre</option>
-                      <option value="2º bimestre">2º bimestre</option>
-                      <option value="1-2º bimestres">1-2º bimestres</option>
-                    </select>
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>Mês de referência</label>
-                    <input type="number" name="mes_referencia" value={formData.mes_referencia} onChange={(e) => setFormData({...formData, mes_referencia: parseInt(e.target.value)})} min={1} max={12} required />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>Descrição resumida</label>
-                    <textarea name="descricao_resumida" value={formData.descricao_resumida} onChange={(e) => setFormData({...formData, descricao_resumida: e.target.value})} rows={2}></textarea>
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>Dados identificadores (JSON)</label>
-                    <textarea name="dados_identificacao" value={formData.dados_identificacao} onChange={(e) => setFormData({...formData, dados_identificacao: e.target.value})} rows={3} placeholder='Ex: {"cpf": "123.456.789-00", "cnpj": "00.000.000/0000-00"}'></textarea>
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>Link original</label>
-                    <input type="url" name="link_original" value={formData.link_original} onChange={(e) => setFormData({...formData, link_original: e.target.value})} placeholder="URL do documento no site oficial" />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>Situação</label>
-                    <select name="status">
-                      <option value="published">Publicado</option>
-                      <option value="draft">Rascunho</option>
-                    </select>
-                  </div>
-                  
-                  <div className="actions">
-                    <button type="submit" className="btn-primary">Salvar registro</button>
-                    <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancelar</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-
-          {/* Botão para abrir formulário */}
-          <button onClick={() => setShowForm(true)} className="add-btn">
-            + Novo registro
-          </button>
         </div>
       </section>
 
