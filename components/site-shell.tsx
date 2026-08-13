@@ -99,7 +99,6 @@ export function SiteHeader({ active = "" }: { active?: string }) {
           <div className="topline-right">
             <Link href="/sobre">Institucional</Link>
             <Link href="/patrocinadores">Seja parceiro</Link>
-            <Link href="/admin/login" className="topline-admin-link">Área Restrita 🔒</Link>
           </div>
         </div>
       </div>

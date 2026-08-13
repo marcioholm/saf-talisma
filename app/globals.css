@@ -64,14 +64,14 @@ h1, h2, h3, strong, b {
 }
 
 /* ---------------- Topline ---------------- */
+/* ---------------- Topline ---------------- */
 .topline {
-  background: #0b0b0b;
-  color: #999;
+  background: #000000;
+  color: #888888;
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  font-family: "Inter", sans-serif;
   border-bottom: 1px solid #1a1a1a;
 }
 
@@ -92,10 +92,10 @@ h1, h2, h3, strong, b {
   color: var(--green);
   border: 1px solid rgba(97, 206, 112, 0.3);
   padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   margin-right: 10px;
 }
 
@@ -108,6 +108,7 @@ h1, h2, h3, strong, b {
 .topline a {
   color: #aaa;
   text-decoration: none;
+  font-size: 11px;
   transition: color 0.2s;
 }
 
@@ -115,22 +116,14 @@ h1, h2, h3, strong, b {
   color: var(--magenta-soft);
 }
 
-.topline-admin-link {
-  color: var(--green) !important;
-  font-weight: 800;
-}
-
 /* ---------------- Header ---------------- */
 .header {
   height: 76px;
-  background: rgba(10, 10, 10, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0d0d0d;
+  border-bottom: 1px solid #1f1f1f;
   position: sticky;
   top: 0;
   z-index: 50;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .header-main {
@@ -140,14 +133,14 @@ h1, h2, h3, strong, b {
 }
 
 .brand {
-  margin-right: 32px;
+  margin-right: 28px;
   display: block;
 }
 
 /* Escudo da SAF Talismã no Header */
 .mark-logo {
-  width: 52px;
-  height: 52px;
+  width: 50px;
+  height: 50px;
   background: transparent;
   clip-path: none;
   border: none;
@@ -155,12 +148,11 @@ h1, h2, h3, strong, b {
   overflow: hidden;
   border-radius: 10px;
   transition: transform 0.2s, filter 0.2s;
-  box-shadow: 0 2px 10px rgba(210, 0, 210, 0.2);
 }
 
 .brand .mark-logo:hover {
-  transform: scale(1.05);
-  filter: brightness(1.1);
+  transform: scale(1.04);
+  filter: brightness(1.08);
 }
 
 .mark-logo img {
@@ -170,25 +162,24 @@ h1, h2, h3, strong, b {
   display: block;
 }
 
-/* Navegação e Abas */
+/* Navegação e Abas com Fonte Inter */
 .nav {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-family: "Barlow Condensed", sans-serif;
-  font-size: 15.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  gap: 8px;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
 }
 
 .nav a {
   position: relative;
-  color: #dddddd;
+  color: #cccccc;
   text-decoration: none;
-  padding: 6px 12px;
+  padding: 8px 13px;
   border-radius: 6px;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.18s ease-in-out;
+  white-space: nowrap;
 }
 
 .nav a:after {
@@ -197,35 +188,34 @@ h1, h2, h3, strong, b {
 
 .nav a:hover {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 .nav a.active {
-  color: #ff5ce8;
-  background: rgba(210, 0, 210, 0.15);
-  border: 1px solid rgba(210, 0, 210, 0.35);
-  box-shadow: 0 0 12px rgba(210, 0, 210, 0.2);
-  font-weight: 800;
+  color: #ffffff;
+  background: rgba(210, 0, 210, 0.2);
+  border: 1px solid rgba(210, 0, 210, 0.4);
+  font-weight: 600;
+  box-shadow: inset 0 0 10px rgba(210, 0, 210, 0.2);
 }
 
 /* Botão Seja parceiro */
 .partner-button {
   margin-left: auto;
-  background: linear-gradient(135deg, var(--green), #42b752);
-  color: #000;
+  background: var(--green);
+  color: #000000;
   padding: 10px 18px;
   border-radius: 6px;
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: "Inter", sans-serif;
   font-size: 13px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-weight: 700;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 14px rgba(97, 206, 112, 0.25);
+  box-shadow: 0 2px 10px rgba(97, 206, 112, 0.2);
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .partner-button .arrow {
@@ -234,9 +224,9 @@ h1, h2, h3, strong, b {
 }
 
 .partner-button:hover {
-  background: linear-gradient(135deg, #74db82, var(--green));
+  background: #74db82;
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(97, 206, 112, 0.35);
+  box-shadow: 0 4px 14px rgba(97, 206, 112, 0.35);
 }
 
 .partner-button:hover .arrow {
