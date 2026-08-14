@@ -53,7 +53,7 @@ export default function AdminPatrocinadores() {
       <div className="admin-topbar">
         <div>
           <h1>Patrocinadores</h1>
-          <p>Parceiros e apoiadores do clube.</p>
+          <p>Parceiros e apoiadores da Associação.</p>
         </div>
         <div className="admin-toolbar">
           <Link href="/admin/patrocinadores/nova" className="btn btn-magenta">

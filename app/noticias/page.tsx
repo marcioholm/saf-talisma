@@ -65,11 +65,13 @@ export default async function NoticiasPage({
       <SiteHeader active="/noticias" />
       <section className="page-hero">
         <div className="shell">
-          <div className="eyebrow">O clube sempre informado</div>
+          <div className="eyebrow">Fique por dentro</div>
           <h1>
-            Últimas <em>notícias</em>
+            Notícias &amp; <em>atualizações</em>
           </h1>
-          <p>Acompanhe os bastidores, jogos e novidades da SAF Talismã.</p>
+          <p>
+            Coberturas de jogos, convocações, bastidores e comunicados oficiais da Associação.
+          </p>
         </div>
       </section>
 

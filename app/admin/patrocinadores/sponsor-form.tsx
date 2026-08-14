@@ -152,16 +152,22 @@ export default function SponsorForm({ id }: { id?: string }) {
           <textarea id="descricao" value={form.descricao} onChange={(e) => set("descricao", e.target.value)} />
         </div>
         <div className="field field-full">
-          <label htmlFor="logo">Logo</label>
+          <label htmlFor="logo">
+            Logo do Patrocinador / Parceiro <small style={{ color: "#2e9c41", fontWeight: 700 }}>· Proporção recomendada: 2:1 (400 × 200 px em PNG transparente)</small>
+          </label>
           <div className="file-field">
             {logoPreview && (
               <img
                 src={logoPreview.startsWith("http") ? logoPreview : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${logoPreview}`}
                 alt=""
                 className="thumb-thumb"
+                style={{ maxHeight: 70, objectFit: "contain", background: "#f3f3f3", padding: 6, borderRadius: 6 }}
               />
             )}
             <input id="logo" type="file" accept="image/*" onChange={(e) => handleLogo(e.target.files?.[0] ?? null)} />
+            <div className="hint" style={{ marginTop: 6, fontSize: 12, color: "#888", lineHeight: 1.5 }}>
+              <strong>Dica de Imagem:</strong> Formato ideal: <strong>PNG transparente</strong> ou <strong>SVG</strong> com resolução de <strong>400 × 200 px</strong> (proporção 2:1 horizontal). Evite logos recortadas ou com fundos sólidos para garantir harmonia no site.
+            </div>
           </div>
         </div>
         <div className="field field-full">

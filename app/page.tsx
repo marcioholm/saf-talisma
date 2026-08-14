@@ -20,6 +20,28 @@ type Post = {
   published_at: string;
 };
 
+type Banner = {
+  id: string;
+  titulo: string | null;
+  subtitulo: string | null;
+  texto: string | null;
+  botao_texto: string | null;
+  botao_url: string | null;
+  botao_target: "same" | "new";
+  imagem_desktop_url: string | null;
+  imagem_mobile_url: string | null;
+  imagem_alt: string | null;
+  ordem: number;
+};
+
+type Sponsor = {
+  id: string;
+  nome: string;
+  logo_url: string;
+  website: string | null;
+  destaque: boolean;
+};
+
 import { associationConfig } from "../lib/association-config";
 
 function Mark({ small = false }: { small?: boolean }) {
@@ -56,7 +78,7 @@ async function getHomeSettings(): Promise<{ destaque: HomeDestaque; evento: Home
       `${supabaseUrl}/rest/v1/site_settings?select=chave,valor&chave=in.(home_destaque,home_evento)`,
       {
         headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
-        next: { revalidate: 60 },
+        next: { revalidate: 30 },
       }
     );
     if (res.ok) {
@@ -75,13 +97,52 @@ async function getHomeSettings(): Promise<{ destaque: HomeDestaque; evento: Home
   };
 }
 
+async function getBanners(): Promise<Banner[]> {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/banners?select=id,titulo,subtitulo,texto,botao_texto,botao_url,botao_target,imagem_desktop_url,imagem_mobile_url,imagem_alt,ordem&ativo=eq.true&order=ordem.asc`,
+      {
+        headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
+        next: { revalidate: 30 },
+      }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      return data || [];
+    }
+  } catch (e) {
+    console.error("Erro ao carregar banners:", e);
+  }
+  return [];
+}
+
+async function getSponsors(): Promise<Sponsor[]> {
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/sponsors?select=id,nome,logo_url,website,destaque,ordem&ativo=eq.true&order=ordem.asc`,
+      {
+        headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
+        next: { revalidate: 30 },
+      }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      return data || [];
+    }
+  } catch (e) {
+    console.error("Erro ao carregar patrocinadores:", e);
+  }
+  return [];
+}
+
 async function getLatestNews(): Promise<Post[]> {
   try {
     const res = await fetch(
       `${supabaseUrl}/rest/v1/posts?select=id,titulo,slug,resumo,imagem_url,published_at&status=eq.published&order=published_at.desc&limit=3`,
       {
         headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
-        next: { revalidate: 60 },
+        next: { revalidate: 30 },
       }
     );
     if (res.ok) return await res.json();
@@ -92,10 +153,14 @@ async function getLatestNews(): Promise<Post[]> {
 }
 
 export default async function Home() {
-  const [{ destaque, evento }, latestNews] = await Promise.all([
+  const [{ destaque, evento }, banners, sponsors, latestNews] = await Promise.all([
     getHomeSettings(),
+    getBanners(),
+    getSponsors(),
     getLatestNews(),
   ]);
+
+  const activeBanner = banners[0];
 
   return (
     <main>
@@ -125,6 +190,76 @@ export default async function Home() {
             <a href={evento.link_url} className="match-link">
               {evento.link_texto} <span>→</span>
             </a>
+          </div>
+        </section>
+      )}
+
+      {/* Banner Principal Cadastrado no Admin */}
+      {activeBanner && (activeBanner.imagem_desktop_url || activeBanner.imagem_mobile_url) && (
+        <section className="home-banner-section shell" style={{ margin: "24px auto 0" }}>
+          <div
+            style={{
+              position: "relative",
+              borderRadius: "12px",
+              overflow: "hidden",
+              background: "#0d0d0d",
+              boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+            }}
+          >
+            <picture>
+              {activeBanner.imagem_mobile_url && (
+                <source media="(max-width: 768px)" srcSet={publicFileUrl(activeBanner.imagem_mobile_url)} />
+              )}
+              <img
+                src={publicFileUrl(activeBanner.imagem_desktop_url || activeBanner.imagem_mobile_url || "")}
+                alt={activeBanner.imagem_alt || activeBanner.titulo || "Banner SAF Talismã"}
+                style={{ width: "100%", height: "auto", display: "block", objectFit: "cover" }}
+              />
+            </picture>
+            {(activeBanner.titulo || activeBanner.subtitulo || activeBanner.botao_texto) && (
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "linear-gradient(to right, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  padding: "40px",
+                  color: "#fff",
+                  maxWidth: "600px",
+                }}
+              >
+                {activeBanner.subtitulo && (
+                  <span style={{ fontSize: "12px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#2e9c41", fontWeight: 700, marginBottom: "8px" }}>
+                    {activeBanner.subtitulo}
+                  </span>
+                )}
+                {activeBanner.titulo && (
+                  <h2 style={{ fontFamily: "Barlow Condensed, sans-serif", fontSize: "36px", fontWeight: 800, textTransform: "uppercase", margin: "0 0 10px 0", lineHeight: 1.1 }}>
+                    {activeBanner.titulo}
+                  </h2>
+                )}
+                {activeBanner.texto && (
+                  <p style={{ fontSize: "15px", color: "#ddd", margin: "0 0 16px 0", lineHeight: 1.4 }}>
+                    {activeBanner.texto}
+                  </p>
+                )}
+                {activeBanner.botao_texto && activeBanner.botao_url && (
+                  <div>
+                    <a
+                      href={activeBanner.botao_url}
+                      target={activeBanner.botao_target === "new" ? "_blank" : undefined}
+                      rel={activeBanner.botao_target === "new" ? "noreferrer" : undefined}
+                      className="button button-green"
+                      style={{ display: "inline-block" }}
+                    >
+                      {activeBanner.botao_texto}
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -311,7 +446,7 @@ export default async function Home() {
               transformar vidas.
             </h2>
             <p>
-              A {associationConfig.name} é mais do que um clube de futsal. É um projeto de formação esportiva e
+              A {associationConfig.name} é um projeto de formação esportiva e
               humana que acredita no poder do esporte para abrir caminhos.
             </p>
             <p>
@@ -339,28 +474,47 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Parceiros da Associação */}
       <section className="partners shell" id="parceiros">
         <span className="label">QUEM ACREDITA NO NOSSO JOGO</span>
-        <h2>Parceiros do clube</h2>
+        <h2>Parceiros da Associação</h2>
         <div className="partner-grid">
-          <div>
-            MASTER
-            <br />
-            <strong>PARCEIRO</strong>
-          </div>
-          <div>
-            {associationConfig.location.split(',')[0].toUpperCase()}
-            <br />
-            <strong>E REGIÃO</strong>
-          </div>
-          <div>
-            SUA MARCA
-            <br />
-            <strong>AQUI</strong>
-          </div>
+          {sponsors.length > 0 ? (
+            sponsors.map((s) => (
+              <a
+                key={s.id}
+                href={s.website || "/patrocinadores"}
+                target={s.website ? "_blank" : undefined}
+                rel={s.website ? "noreferrer" : undefined}
+                className="partner-item"
+                title={s.nome}
+              >
+                <img src={publicFileUrl(s.logo_url)} alt={s.nome} />
+                <strong>{s.nome}</strong>
+              </a>
+            ))
+          ) : (
+            <>
+              <div>
+                MASTER
+                <br />
+                <strong>PARCEIRO</strong>
+              </div>
+              <div>
+                {associationConfig.location.split(',')[0].toUpperCase()}
+                <br />
+                <strong>E REGIÃO</strong>
+              </div>
+              <div>
+                SUA MARCA
+                <br />
+                <strong>AQUI</strong>
+              </div>
+            </>
+          )}
         </div>
         <Link className="partner-cta" href="/patrocinadores">
-          Quero ser parceiro <span>→</span>
+          Quero ser parceiro
         </Link>
       </section>
 

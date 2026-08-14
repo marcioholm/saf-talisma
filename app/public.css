@@ -375,17 +375,75 @@
 .transparency-item .t-details .t-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px 20px; margin-bottom: 14px; }
 .transparency-item .t-details .t-field span { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: #9a9a9a; font-weight: 700; }
 .transparency-item .t-details .t-field p { margin: 2px 0 0; font-size: 14px; color: #333; }
-.transparency-item .t-docs { display: flex; flex-direction: column; gap: 8px; }
-.transparency-item .t-docs a {
-  display: inline-flex;
+.transparency-item .t-docs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+.transparency-item .t-doc-card {
+  display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  background: #fdfdfd;
+  border: 1px solid #e2e2dd;
+  border-radius: 8px;
+  padding: 10px 14px;
+  transition: all 0.2s ease;
+}
+.transparency-item .t-doc-card:hover {
+  border-color: #2e9c41;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+.transparency-item .t-doc-badge {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: #0d0d0d;
+  color: #fff;
+  letter-spacing: 0.05em;
+}
+.transparency-item .t-doc-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.transparency-item .t-doc-title {
   font-size: 13.5px;
   font-weight: 600;
-  color: #D200D2;
-  text-decoration: none;
+  color: #111;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.transparency-item .t-docs a:hover { text-decoration: underline; }
+.transparency-item .t-doc-size {
+  font-size: 11.5px;
+  color: #777;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.transparency-item .t-doc-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #2e9c41;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+.transparency-item .t-doc-download-btn:hover {
+  background: #248034;
+  color: #fff;
+}
 
 /* ---------- Sobre ---------- */
 .about-copy { max-width: 760px; }

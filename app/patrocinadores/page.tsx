@@ -4,35 +4,61 @@ import { associationConfig } from "../../lib/association-config";
 import { PartnerForm } from "./partner-form";
 import "../public.css";
 
+type Sponsor = {
+  id: string;
+  nome: string;
+  logo_url: string;
+  website: string | null;
+  descricao: string | null;
+  destaque: boolean;
+  ordem: number;
+  categoria_id: string | null;
+  sponsor_categories?: {
+    id: string;
+    nome: string;
+    ordem: number;
+  } | null;
+};
+
 type SponsorGroup = {
   id: string;
   nome: string;
   ordem: number;
-  sponsors: Array<{
-    id: string;
-    nome: string;
-    logo_url: string;
-    website: string | null;
-    descricao: string | null;
-    destaque: boolean;
-  }> | null;
+  sponsors: Sponsor[];
 };
 
 async function getSponsorGroups(): Promise<SponsorGroup[]> {
   try {
     const res = await fetch(
-      `${supabaseUrl}/rest/v1/sponsor_categories?select=id,nome,ordem,sponsors(id,nome,logo_url,website,descricao,destaque)&ativo=eq.true&order=ordem.asc`,
+      `${supabaseUrl}/rest/v1/sponsors?select=id,nome,logo_url,website,descricao,destaque,ordem,categoria_id,sponsor_categories(id,nome,ordem)&ativo=eq.true&order=ordem.asc`,
       {
         headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
-        next: { revalidate: 60 },
+        next: { revalidate: 30 },
       }
     );
     if (res.ok) {
-      const data = await res.json();
-      return (data as SponsorGroup[]).map((g) => ({
-        ...g,
-        sponsors: (g.sponsors ?? []).sort((a, b) => Number(b.destaque) - Number(a.destaque)),
-      }));
+      const sponsors: Sponsor[] = await res.json();
+      if (!Array.isArray(sponsors) || sponsors.length === 0) return [];
+
+      const groupMap = new Map<string, SponsorGroup>();
+
+      for (const s of sponsors) {
+        const catId = s.sponsor_categories?.id || "geral";
+        const catNome = s.sponsor_categories?.nome || "Parceiros Oficiais";
+        const catOrdem = s.sponsor_categories?.ordem ?? 99;
+
+        if (!groupMap.has(catId)) {
+          groupMap.set(catId, {
+            id: catId,
+            nome: catNome,
+            ordem: catOrdem,
+            sponsors: [],
+          });
+        }
+        groupMap.get(catId)!.sponsors.push(s);
+      }
+
+      return Array.from(groupMap.values()).sort((a, b) => a.ordem - b.ordem);
     }
   } catch (err) {
     console.error("Erro ao carregar patrocinadores:", err);
@@ -101,7 +127,7 @@ export default async function PatrocinadoresPage() {
                     <span>◆</span> {group.nome}
                   </h3>
                   <div className="partner-grid-page">
-                    {group.sponsors!.map((s) => (
+                    {group.sponsors.map((s) => (
                       <a
                         key={s.id}
                         className="partner-card"
