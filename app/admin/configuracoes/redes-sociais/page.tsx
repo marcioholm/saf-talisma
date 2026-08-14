@@ -40,7 +40,10 @@ export default function AdminConfiguracoesRedesSociais() {
       const userId = session.session?.user.id;
       const { error } = await client
         .from("site_settings")
-        .upsert({ chave: "redes_sociais", valor: data, updated_by: userId });
+        .upsert(
+          { chave: "redes_sociais", valor: data, updated_by: userId },
+          { onConflict: "chave" }
+        );
       if (error) throw new Error(error.message);
       setMessage({ type: "success", text: "Links das redes sociais salvos com sucesso." });
     } catch (err) {

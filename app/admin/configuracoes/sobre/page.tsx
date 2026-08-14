@@ -50,7 +50,10 @@ export default function AdminConfiguracoesSobre() {
       const userId = session.session?.user.id;
       const { error } = await client
         .from("site_settings")
-        .upsert({ chave: "config_sobre", valor: data, updated_by: userId });
+        .upsert(
+          { chave: "config_sobre", valor: data, updated_by: userId },
+          { onConflict: "chave" }
+        );
       if (error) throw new Error(error.message);
       setMessage({ type: "success", text: "Configurações da página Sobre salvas com sucesso." });
     } catch (err) {

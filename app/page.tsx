@@ -45,6 +45,13 @@ type Sponsor = {
   destaque: boolean;
 };
 
+type Stats = {
+  atletas_ativos: number;
+  categorias: number;
+  anos_atuacao: number;
+  premios: number;
+};
+
 import { associationConfig } from "../lib/association-config";
 
 function Mark({ small = false }: { small?: boolean }) {
@@ -78,31 +85,54 @@ async function getHomeSettings(): Promise<{
   destaque: HomeDestaque;
   evento: HomeEvento;
   proximoDesafio: HomeProximoDesafio;
+  stats: Stats;
 }> {
+  let destaque = DEFAULT_HOME_DESTAQUE;
+  let evento = DEFAULT_HOME_EVENTO;
+  let proximoDesafio = DEFAULT_HOME_PROXIMO_DESAFIO;
+  let stats: Stats = { atletas_ativos: 200, categorias: 4, anos_atuacao: 17, premios: 50 };
+
   try {
-    const res = await fetch(
-      `${supabaseUrl}/rest/v1/site_settings?select=chave,valor&chave=in.(home_destaque,home_evento,home_proximo_desafio)`,
-      {
-        headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
-        next: { revalidate: 30 },
+    const [settingsRes, statsRes] = await Promise.all([
+      fetch(
+        `${supabaseUrl}/rest/v1/site_settings?select=chave,valor&chave=in.(home_destaque,home_evento,home_proximo_desafio)`,
+        {
+          headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
+          next: { revalidate: 30 },
+        }
+      ),
+      fetch(
+        `${supabaseUrl}/rest/v1/estatisticas?select=atletas_ativos,categorias,anos_atuacao,premios&limit=1`,
+        {
+          headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
+          next: { revalidate: 30 },
+        }
+      ),
+    ]);
+
+    if (settingsRes.ok) {
+      const data = await settingsRes.json();
+      destaque = mergeDestaque(data);
+      evento = mergeEvento(data);
+      proximoDesafio = mergeProximoDesafio(data);
+    }
+
+    if (statsRes.ok) {
+      const statsData = await statsRes.json();
+      if (statsData && statsData.length > 0) {
+        stats = {
+          atletas_ativos: statsData[0].atletas_ativos || 200,
+          categorias: statsData[0].categorias || 4,
+          anos_atuacao: statsData[0].anos_atuacao || 17,
+          premios: statsData[0].premios || 50,
+        };
       }
-    );
-    if (res.ok) {
-      const data = await res.json();
-      return {
-        destaque: mergeDestaque(data),
-        evento: mergeEvento(data),
-        proximoDesafio: mergeProximoDesafio(data),
-      };
     }
   } catch (e) {
     console.error("Erro ao carregar configurações da home:", e);
   }
-  return {
-    destaque: DEFAULT_HOME_DESTAQUE,
-    evento: DEFAULT_HOME_EVENTO,
-    proximoDesafio: DEFAULT_HOME_PROXIMO_DESAFIO,
-  };
+
+  return { destaque, evento, proximoDesafio, stats };
 }
 
 async function getBanners(): Promise<Banner[]> {
@@ -160,7 +190,7 @@ async function getLatestNews(): Promise<Post[]> {
 }
 
 export default async function Home() {
-  const [{ destaque, evento, proximoDesafio }, banners, sponsors, latestNews] = await Promise.all([
+  const [{ destaque, evento, proximoDesafio, stats }, banners, sponsors, latestNews] = await Promise.all([
     getHomeSettings(),
     getBanners(),
     getSponsors(),
@@ -440,7 +470,18 @@ export default async function Home() {
 
       <section className="story" id="historia">
         <div className="shell story-grid">
-          <div className="story-visual">
+          <div
+            className="story-visual"
+            style={
+              destaque.imagem_historia_url
+                ? {
+                    backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7)), url("${publicFileUrl(destaque.imagem_historia_url)}")`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }
+                : undefined
+            }
+          >
             <span className="year">2009</span>
             <div className="crest-ghost">
               <Mark />
@@ -458,20 +499,20 @@ export default async function Home() {
               humana que acredita no poder do esporte para abrir caminhos.
             </p>
             <p>
-              Há {new Date().getFullYear() - associationConfig.founded} anos, desenvolvemos atletas com disciplina, respeito e espírito de equipe — dentro
+              Há {stats.anos_atuacao || new Date().getFullYear() - associationConfig.founded} anos, desenvolvemos atletas com disciplina, respeito e espírito de equipe — dentro
               e fora das quadras.
             </p>
             <div className="stats">
               <div>
-                <strong>200+</strong>
+                <strong>{stats.atletas_ativos}+</strong>
                 <span>ATLETAS</span>
               </div>
               <div>
-                <strong>4</strong>
+                <strong>{stats.categorias}</strong>
                 <span>CATEGORIAS</span>
               </div>
               <div>
-                <strong>50+</strong>
+                <strong>{stats.premios}+</strong>
                 <span>TÍTULOS</span>
               </div>
             </div>

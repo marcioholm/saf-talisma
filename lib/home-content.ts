@@ -6,6 +6,8 @@ export type HomeDestaque = {
   numero_rotulo: string;
   botao_texto: string;
   botao_link: string;
+  imagem_historia_url?: string;
+  imagem_hero_url?: string;
 };
 
 export type HomeEvento = {
@@ -47,6 +49,8 @@ export const DEFAULT_HOME_DESTAQUE: HomeDestaque = {
   numero_rotulo: "ANOS\nDE HISTÓRIA",
   botao_texto: "Conheça nossa história",
   botao_link: "/sobre",
+  imagem_historia_url: "",
+  imagem_hero_url: "",
 };
 
 export const DEFAULT_HOME_EVENTO: HomeEvento = {

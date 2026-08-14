@@ -24,7 +24,7 @@ type Settings = {
   home_proximo_desafio: HomeProximoDesafio;
 };
 
-type Stats = { id: string; atletas_ativos: number; categorias: number; anos_atuacao: number; premios: number };
+type Stats = { id?: string; atletas_ativos: number; categorias: number; anos_atuacao: number; premios: number };
 
 const EMPTY_SETTINGS: Settings = {
   contatos: { email: "", telefone: "", endereco: "", cidade: "", estado: "" },
@@ -37,11 +37,12 @@ const EMPTY_SETTINGS: Settings = {
 
 export default function AdminConfiguracoes() {
   const [settings, setSettings] = useState<Settings>(EMPTY_SETTINGS);
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [stats, setStats] = useState<Stats>({ atletas_ativos: 200, categorias: 4, anos_atuacao: 17, premios: 50 });
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploadingShield, setUploadingShield] = useState(false);
+  const [uploadingHistoryImg, setUploadingHistoryImg] = useState(false);
 
   useEffect(() => {
     const client = getAdminClient();
@@ -50,7 +51,8 @@ export default function AdminConfiguracoes() {
       const { data: redes } = await client.from("site_settings").select("valor").eq("chave", "redes_sociais").maybeSingle();
       const { data: emailConfig } = await client.from("site_settings").select("valor").eq("chave", "email_config").maybeSingle();
       const { data: homeRows } = await client.from("site_settings").select("chave, valor").in("chave", ["home_destaque", "home_evento", "home_proximo_desafio"]);
-      const { data: stats } = await client.from("estatisticas").select("*").limit(1).maybeSingle();
+      const { data: dbStats } = await client.from("estatisticas").select("*").limit(1).maybeSingle();
+      
       setSettings({
         contatos: { ...EMPTY_SETTINGS.contatos, ...(contatos?.valor as object) },
         redes_sociais: { ...EMPTY_SETTINGS.redes_sociais, ...(redes?.valor as object) },
@@ -59,7 +61,10 @@ export default function AdminConfiguracoes() {
         home_evento: mergeEvento(homeRows as Array<{ chave: string; valor: unknown }> | null),
         home_proximo_desafio: mergeProximoDesafio(homeRows as Array<{ chave: string; valor: unknown }> | null),
       });
-      setStats(stats as Stats | null);
+
+      if (dbStats) {
+        setStats(dbStats as Stats);
+      }
       setLoading(false);
     })().catch((e: Error) => setMessage({ type: "error", text: e.message }));
   }, []);
@@ -83,7 +88,7 @@ export default function AdminConfiguracoes() {
     setSettings((s) => ({ ...s, home_proximo_desafio: { ...s.home_proximo_desafio, [key]: value } }));
   }
   function setStat<K extends keyof Stats>(key: K, value: number) {
-    setStats((s) => (s ? { ...s, [key]: value } : s));
+    setStats((s) => ({ ...s, [key]: value }));
   }
 
   async function handleShieldUpload(file: File | null) {
@@ -100,6 +105,20 @@ export default function AdminConfiguracoes() {
     }
   }
 
+  async function handleHistoryImgUpload(file: File | null) {
+    if (!file) return;
+    setUploadingHistoryImg(true);
+    try {
+      const client = getAdminClient();
+      const path = await uploadFile(client, "institutional", file, "historia");
+      setDestaqueField("imagem_historia_url", path);
+    } catch (err: any) {
+      setMessage({ type: "error", text: err?.message || "Falha no upload da foto institucional." });
+    } finally {
+      setUploadingHistoryImg(false);
+    }
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setMessage(null);
@@ -109,29 +128,63 @@ export default function AdminConfiguracoes() {
       const { data: session } = await client.auth.getSession();
       const userId = session.session?.user.id;
 
-      const err1 = await client.from("site_settings").upsert({ chave: "contatos", valor: settings.contatos, updated_by: userId });
+      // 1. Salvar site_settings com onConflict explícito
+      const err1 = await client.from("site_settings").upsert(
+        { chave: "contatos", valor: settings.contatos, updated_by: userId },
+        { onConflict: "chave" }
+      );
       if (err1.error) throw new Error(err1.error.message);
 
-      const err2 = await client.from("site_settings").upsert({ chave: "redes_sociais", valor: settings.redes_sociais, updated_by: userId });
+      const err2 = await client.from("site_settings").upsert(
+        { chave: "redes_sociais", valor: settings.redes_sociais, updated_by: userId },
+        { onConflict: "chave" }
+      );
       if (err2.error) throw new Error(err2.error.message);
 
-      const err4 = await client.from("site_settings").upsert({ chave: "email_config", valor: settings.email_config, updated_by: userId });
+      const err4 = await client.from("site_settings").upsert(
+        { chave: "email_config", valor: settings.email_config, updated_by: userId },
+        { onConflict: "chave" }
+      );
       if (err4.error) throw new Error(err4.error.message);
 
-      const err5 = await client.from("site_settings").upsert({ chave: "home_destaque", valor: settings.home_destaque, updated_by: userId });
+      const err5 = await client.from("site_settings").upsert(
+        { chave: "home_destaque", valor: settings.home_destaque, updated_by: userId },
+        { onConflict: "chave" }
+      );
       if (err5.error) throw new Error(err5.error.message);
 
-      const err6 = await client.from("site_settings").upsert({ chave: "home_evento", valor: settings.home_evento, updated_by: userId });
+      const err6 = await client.from("site_settings").upsert(
+        { chave: "home_evento", valor: settings.home_evento, updated_by: userId },
+        { onConflict: "chave" }
+      );
       if (err6.error) throw new Error(err6.error.message);
 
-      const err7 = await client.from("site_settings").upsert({ chave: "home_proximo_desafio", valor: settings.home_proximo_desafio, updated_by: userId });
+      const err7 = await client.from("site_settings").upsert(
+        { chave: "home_proximo_desafio", valor: settings.home_proximo_desafio, updated_by: userId },
+        { onConflict: "chave" }
+      );
       if (err7.error) throw new Error(err7.error.message);
 
-      if (stats) {
-        const err3 = await client.from("estatisticas").update({ atletas_ativos: stats.atletas_ativos, categorias: stats.categorias, anos_atuacao: stats.anos_atuacao, premios: stats.premios }).eq("id", stats.id);
-        if (err3.error) throw new Error(err3.error.message);
+      // 2. Salvar estatísticas numéricas
+      if (stats.id) {
+        const errStats = await client.from("estatisticas").update({
+          atletas_ativos: Number(stats.atletas_ativos) || 0,
+          categorias: Number(stats.categorias) || 0,
+          anos_atuacao: Number(stats.anos_atuacao) || 0,
+          premios: Number(stats.premios) || 0,
+        }).eq("id", stats.id);
+        if (errStats.error) throw new Error(errStats.error.message);
+      } else {
+        const errStats = await client.from("estatisticas").insert({
+          atletas_ativos: Number(stats.atletas_ativos) || 0,
+          categorias: Number(stats.categorias) || 0,
+          anos_atuacao: Number(stats.anos_atuacao) || 0,
+          premios: Number(stats.premios) || 0,
+        });
+        if (errStats.error) throw new Error(errStats.error.message);
       }
-      setMessage({ type: "success", text: "Configurações e Próximos Desafios salvos com sucesso!" });
+
+      setMessage({ type: "success", text: "Todas as configurações e números foram salvos com sucesso!" });
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Erro ao salvar." });
     } finally {
@@ -146,7 +199,7 @@ export default function AdminConfiguracoes() {
       <div className="admin-topbar">
         <div>
           <h1>Configurações Gerais</h1>
-          <p>Próximo desafio, destaques da home, contatos e redes sociais.</p>
+          <p>Próximo desafio, fotos, frases de destaque, números da história e redes sociais.</p>
         </div>
       </div>
       {message && <div className={`alert alert-${message.type}`}>{message.text}</div>}
@@ -202,19 +255,21 @@ export default function AdminConfiguracoes() {
           <input id="pd-marca-fora" value={settings.home_proximo_desafio.marca_fora} onChange={(e) => setDesafioField("marca_fora", e.target.value)} placeholder="12J" />
         </div>
         <div className="field">
-          <label htmlFor="pd-escudo">Escudo / Logo do Adversário</label>
+          <label htmlFor="pd-escudo">
+            Escudo / Logo do Adversário <small style={{ color: "#2e9c41", fontWeight: 700 }}>· Proporção 1:1 (200 × 200 px em PNG transparente)</small>
+          </label>
           <div className="file-field">
             {settings.home_proximo_desafio.escudo_fora_url && (
               <img
                 src={settings.home_proximo_desafio.escudo_fora_url.startsWith("http") ? settings.home_proximo_desafio.escudo_fora_url : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${settings.home_proximo_desafio.escudo_fora_url}`}
                 alt=""
                 className="thumb-thumb"
-                style={{ maxHeight: 45, objectFit: "contain" }}
+                style={{ maxHeight: 45, objectFit: "contain", background: "#f5f5f5", padding: 4, borderRadius: 6 }}
               />
             )}
             <input id="pd-escudo" type="file" accept="image/*" onChange={(e) => handleShieldUpload(e.target.files?.[0] ?? null)} disabled={uploadingShield} />
           </div>
-          <div className="hint">{uploadingShield ? "Enviando escudo..." : "Envie o logo ou escudo do time adversário."}</div>
+          <div className="hint">{uploadingShield ? "Enviando escudo..." : "Dimensão ideal: 200 × 200 px (quadrado / PNG transparente)."}</div>
         </div>
         <div className="field">
           <label htmlFor="pd-link-texto">Texto do Botão / Link</label>
@@ -280,29 +335,29 @@ export default function AdminConfiguracoes() {
         </div>
       </div>
 
-      {/* FRASE DE DESTAQUE DA HERO */}
-      <h2 className="admin-section-title">Home — Frase Principal (Hero)</h2>
+      {/* FRASE DE DESTAQUE DA HERO E FOTO HISTÓRIA */}
+      <h2 className="admin-section-title">Home — Frase Principal & Fotos</h2>
       <div className="admin-form-grid">
         <div className="field">
-          <label htmlFor="hd-eyebrow">Selo (eyebrow)</label>
+          <label htmlFor="hd-eyebrow">Selo Superior (eyebrow)</label>
           <input id="hd-eyebrow" value={settings.home_destaque.eyebrow} onChange={(e) => setDestaqueField("eyebrow", e.target.value)} />
         </div>
         <div className="field">
-          <label htmlFor="hd-numero">Número em destaque</label>
+          <label htmlFor="hd-numero">Número em destaque na Hero</label>
           <input id="hd-numero" value={settings.home_destaque.numero} onChange={(e) => setDestaqueField("numero", e.target.value)} />
         </div>
         <div className="field field-full">
           <label htmlFor="hd-titulo">
-            Título <small>(use Enter para quebrar linha; a última linha fica destacada)</small>
+            Título Principal <small>(use Enter para quebrar linha; a última linha ganha destaque itálico)</small>
           </label>
           <textarea id="hd-titulo" value={settings.home_destaque.titulo} onChange={(e) => setDestaqueField("titulo", e.target.value)} />
         </div>
         <div className="field field-full">
-          <label htmlFor="hd-rotulo">Rótulo do número</label>
+          <label htmlFor="hd-rotulo">Rótulo do número da Hero (Ex.: ANOS DE HISTÓRIA)</label>
           <textarea id="hd-rotulo" value={settings.home_destaque.numero_rotulo} onChange={(e) => setDestaqueField("numero_rotulo", e.target.value)} />
         </div>
         <div className="field field-full">
-          <label htmlFor="hd-subtitulo">Subtítulo</label>
+          <label htmlFor="hd-subtitulo">Subtítulo / Descrição</label>
           <textarea id="hd-subtitulo" value={settings.home_destaque.subtitulo} onChange={(e) => setDestaqueField("subtitulo", e.target.value)} />
         </div>
         <div className="field">
@@ -314,6 +369,44 @@ export default function AdminConfiguracoes() {
             Link do botão <small>#secao, /pagina ou URL</small>
           </label>
           <input id="hd-botao-link" value={settings.home_destaque.botao_link} onChange={(e) => setDestaqueField("botao_link", e.target.value)} placeholder="/sobre" />
+        </div>
+        <div className="field field-full">
+          <label htmlFor="hd-foto-historia">
+            Foto Institucional da Seção "Nossa História" <small style={{ color: "#2e9c41", fontWeight: 700 }}>· Proporção recomendada: 4:3 (800 × 600 px) ou 16:9 (1200 × 675 px)</small>
+          </label>
+          <div className="file-field">
+            {settings.home_destaque.imagem_historia_url && (
+              <img
+                src={settings.home_destaque.imagem_historia_url.startsWith("http") ? settings.home_destaque.imagem_historia_url : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${settings.home_destaque.imagem_historia_url}`}
+                alt=""
+                className="thumb-thumb"
+                style={{ maxHeight: 60, objectFit: "cover", borderRadius: 6 }}
+              />
+            )}
+            <input id="hd-foto-historia" type="file" accept="image/*" onChange={(e) => handleHistoryImgUpload(e.target.files?.[0] ?? null)} disabled={uploadingHistoryImg} />
+          </div>
+          <div className="hint">{uploadingHistoryImg ? "Enviando imagem..." : "Dimensões sugeridas: 800 × 600 px (4:3) ou 1200 × 675 px (16:9). Formatos: JPG, PNG, WebP."}</div>
+        </div>
+      </div>
+
+      {/* ESTATÍSTICAS NUMÉRICAS */}
+      <h2 className="admin-section-title" style={{ color: "#2e9c41" }}>Estatísticas Numéricas (Home e Sobre)</h2>
+      <div className="admin-form-grid">
+        <div className="field">
+          <label htmlFor="atletas">Atletas Ativos (Ex.: 200)</label>
+          <input id="atletas" type="number" min={0} value={stats.atletas_ativos} onChange={(e) => setStat("atletas_ativos", Number(e.target.value))} />
+        </div>
+        <div className="field">
+          <label htmlFor="categorias-stats">Categorias Ativas (Ex.: 4)</label>
+          <input id="categorias-stats" type="number" min={0} value={stats.categorias} onChange={(e) => setStat("categorias", Number(e.target.value))} />
+        </div>
+        <div className="field">
+          <label htmlFor="anos">Anos de Atuação (Ex.: 17)</label>
+          <input id="anos" type="number" min={0} value={stats.anos_atuacao} onChange={(e) => setStat("anos_atuacao", Number(e.target.value))} />
+        </div>
+        <div className="field">
+          <label htmlFor="premios">Títulos / Prêmios (Ex.: 50)</label>
+          <input id="premios" type="number" min={0} value={stats.premios} onChange={(e) => setStat("premios", Number(e.target.value))} />
         </div>
       </div>
 
@@ -349,7 +442,7 @@ export default function AdminConfiguracoes() {
       <div className="admin-form-grid">
         <div className="field">
           <label htmlFor="instagram">Instagram</label>
-          <input id="instagram" value={settings.redes_sociais.instagram} onChange={(e) => setRede("instagram", e.target.value)} placeholder="https://instagram.com/…" />
+          <input id="instagram" value={settings.redes_sociais.instagram} onChange={(e) => setRede("instagram", e.target.value)} placeholder="https://instagram.com/saf_arapoti" />
         </div>
         <div className="field">
           <label htmlFor="facebook">Facebook</label>
@@ -365,28 +458,7 @@ export default function AdminConfiguracoes() {
         </div>
       </div>
 
-      {/* ESTATÍSTICAS */}
-      <h2 className="admin-section-title">Estatísticas da home</h2>
-      <div className="admin-form-grid">
-        <div className="field">
-          <label htmlFor="atletas">Atletas ativos</label>
-          <input id="atletas" type="number" min={0} value={stats?.atletas_ativos ?? 0} onChange={(e) => setStat("atletas_ativos", Number(e.target.value))} />
-        </div>
-        <div className="field">
-          <label htmlFor="categorias-stats">Categorias</label>
-          <input id="categorias-stats" type="number" min={0} value={stats?.categorias ?? 0} onChange={(e) => setStat("categorias", Number(e.target.value))} />
-        </div>
-        <div className="field">
-          <label htmlFor="anos">Anos de atuação</label>
-          <input id="anos" type="number" min={0} value={stats?.anos_atuacao ?? 0} onChange={(e) => setStat("anos_atuacao", Number(e.target.value))} />
-        </div>
-        <div className="field">
-          <label htmlFor="premios">Prêmios</label>
-          <input id="premios" type="number" min={0} value={stats?.premios ?? 0} onChange={(e) => setStat("premios", Number(e.target.value))} />
-        </div>
-      </div>
-
-      <div className="form-actions" style={{ marginTop: 24 }}>
+      <div className="form-actions" style={{ marginTop: 28 }}>
         <button type="submit" className="btn btn-magenta" disabled={saving}>
           {saving ? "Salvando…" : "Salvar todas as configurações"}
         </button>
