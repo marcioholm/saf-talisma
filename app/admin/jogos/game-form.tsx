@@ -272,16 +272,22 @@ export default function GameForm({ id }: { id?: string }) {
           />
         </div>
         <div className="field field-full">
-          <label htmlFor="shield">Escudo do adversário</label>
+          <label htmlFor="shield">
+            Escudo / Logo do Adversário <small style={{ color: "#2e9c41", fontWeight: 700 }}>· Proporção recomendada: 1:1 (200 × 200 px ou 300 × 300 px em PNG transparente)</small>
+          </label>
           <div className="file-field">
             {currentShield && (
               <img
                 src={currentShield.startsWith("http") ? currentShield : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${currentShield}`}
                 alt=""
                 className="thumb-thumb"
+                style={{ maxHeight: 60, objectFit: "contain", background: "#f5f5f5", padding: 4, borderRadius: 6 }}
               />
             )}
             <input id="shield" type="file" accept="image/*" onChange={(e) => handleShield(e.target.files?.[0] ?? null)} />
+            <div className="hint" style={{ marginTop: 6, fontSize: 12, color: "#888", lineHeight: 1.5 }}>
+              <strong>Dica de Imagem:</strong> Utilize o escudo ou logo do adversário em formato <strong>PNG com fundo transparente</strong> ou quadrado na proporção <strong>1:1</strong> (resolução sugerida: <strong>200 × 200 px</strong>) para melhor nitidez nos cards e placares.
+            </div>
           </div>
         </div>
         <div className="field field-full">

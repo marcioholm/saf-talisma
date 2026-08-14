@@ -62,7 +62,10 @@ export default function AdminJogos() {
           <h1>Jogos</h1>
           <p>Agenda e resultados das equipes.</p>
         </div>
-        <div className="admin-toolbar">
+        <div className="admin-toolbar" style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <Link href="/admin/configuracoes" className="btn" style={{ background: "#2e9c41", color: "#fff", fontWeight: 600 }}>
+            Configurar Próximo Desafio na Home
+          </Link>
           <Link href="/admin/jogos/nova" className="btn btn-magenta">
             + Novo jogo
           </Link>

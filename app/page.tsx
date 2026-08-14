@@ -4,10 +4,13 @@ import { supabaseUrl, supabaseAnonKey, publicFileUrl } from "../lib/supabase";
 import {
   mergeDestaque,
   mergeEvento,
+  mergeProximoDesafio,
   DEFAULT_HOME_DESTAQUE,
   DEFAULT_HOME_EVENTO,
+  DEFAULT_HOME_PROXIMO_DESAFIO,
   type HomeDestaque,
   type HomeEvento,
+  type HomeProximoDesafio,
 } from "../lib/home-content";
 import "./public.css";
 
@@ -45,12 +48,11 @@ type Sponsor = {
 import { associationConfig } from "../lib/association-config";
 
 function Mark({ small = false }: { small?: boolean }) {
-  const [primeiroNome, ...resto] = associationConfig.name.split(" ");
   return (
     <div className={`mark ${small ? "mark-small" : ""}`} aria-label={associationConfig.name}>
       <span className="mark-star">★</span>
-      <strong>{primeiroNome}</strong>
-      <span>{resto.join(" ")}</span>
+      <strong>SAF</strong>
+      <span>Talismã</span>
     </div>
   );
 }
@@ -72,10 +74,14 @@ function Lines({ text, emLast = false }: { text: string; emLast?: boolean }) {
   );
 }
 
-async function getHomeSettings(): Promise<{ destaque: HomeDestaque; evento: HomeEvento }> {
+async function getHomeSettings(): Promise<{
+  destaque: HomeDestaque;
+  evento: HomeEvento;
+  proximoDesafio: HomeProximoDesafio;
+}> {
   try {
     const res = await fetch(
-      `${supabaseUrl}/rest/v1/site_settings?select=chave,valor&chave=in.(home_destaque,home_evento)`,
+      `${supabaseUrl}/rest/v1/site_settings?select=chave,valor&chave=in.(home_destaque,home_evento,home_proximo_desafio)`,
       {
         headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
         next: { revalidate: 30 },
@@ -86,6 +92,7 @@ async function getHomeSettings(): Promise<{ destaque: HomeDestaque; evento: Home
       return {
         destaque: mergeDestaque(data),
         evento: mergeEvento(data),
+        proximoDesafio: mergeProximoDesafio(data),
       };
     }
   } catch (e) {
@@ -94,12 +101,12 @@ async function getHomeSettings(): Promise<{ destaque: HomeDestaque; evento: Home
   return {
     destaque: DEFAULT_HOME_DESTAQUE,
     evento: DEFAULT_HOME_EVENTO,
+    proximoDesafio: DEFAULT_HOME_PROXIMO_DESAFIO,
   };
 }
 
 async function getBanners(): Promise<Banner[]> {
   try {
-    const today = new Date().toISOString().slice(0, 10);
     const res = await fetch(
       `${supabaseUrl}/rest/v1/banners?select=id,titulo,subtitulo,texto,botao_texto,botao_url,botao_target,imagem_desktop_url,imagem_mobile_url,imagem_alt,ordem&ativo=eq.true&order=ordem.asc`,
       {
@@ -153,7 +160,7 @@ async function getLatestNews(): Promise<Post[]> {
 }
 
 export default async function Home() {
-  const [{ destaque, evento }, banners, sponsors, latestNews] = await Promise.all([
+  const [{ destaque, evento, proximoDesafio }, banners, sponsors, latestNews] = await Promise.all([
     getHomeSettings(),
     getBanners(),
     getSponsors(),
@@ -353,53 +360,54 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="next-match">
-        <div className="shell next-grid">
-          <div>
-            <span className="label">PRÓXIMO DESAFIO</span>
-            <h2>
-              A caminhada
-              <br />
-              continua.
-            </h2>
-            <p>Mais um grande confronto pela fase de grupos do Sul-Americano de Clubes.</p>
-          </div>
-          <div className="fixture-card">
-            <div className="fixture-top">
-              <span>FASE DE GRUPOS · RODADA 2</span>
-              <b>ASSUNÇÃO, PARAGUAI</b>
+      {/* Seção Próximo Desafio (Editável pelo Admin) */}
+      {proximoDesafio.exibir && (
+        <section className="next-match">
+          <div className="shell next-grid">
+            <div>
+              <span className="label">{proximoDesafio.tag || "PRÓXIMO DESAFIO"}</span>
+              <h2>
+                <Lines text={proximoDesafio.titulo} />
+              </h2>
+              <p>{proximoDesafio.subtitulo}</p>
             </div>
-            <div className="fixture-teams">
-              <div>
-                <Mark small />
-                <strong>
-                  SAF
-                  <br />
-                  Talismã
-                </strong>
+            <div className="fixture-card">
+              <div className="fixture-top">
+                <span>{proximoDesafio.fase_rodada}</span>
+                <b>{proximoDesafio.local_cidade}</b>
               </div>
-              <span className="versus">
-                VS<small>EM BREVE</small>
-              </span>
-              <div>
-                <div className="opponent-mark large">12J</div>
-                <strong>
-                  12 de Junio
-                  <br />
-                  Futsal
-                </strong>
+              <div className="fixture-teams">
+                <div>
+                  <div className="opponent-mark" style={{ background: "#D200D2", color: "#fff", margin: "0 auto 8px" }}>
+                    SAF
+                  </div>
+                  <strong>{proximoDesafio.time_casa}</strong>
+                </div>
+                <span className="versus">
+                  VS<small>{proximoDesafio.status_label || "EM BREVE"}</small>
+                </span>
+                <div>
+                  <div className="opponent-mark large" style={{ margin: "0 auto 8px" }}>
+                    {proximoDesafio.escudo_fora_url ? (
+                      <img src={publicFileUrl(proximoDesafio.escudo_fora_url)} alt={proximoDesafio.time_fora} style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }} />
+                    ) : (
+                      proximoDesafio.marca_fora || "ADV"
+                    )}
+                  </div>
+                  <strong>{proximoDesafio.time_fora}</strong>
+                </div>
+              </div>
+              <div className="fixture-bottom">
+                <span>
+                  <i className="dot" />
+                  Acompanhe em nossas redes sociais
+                </span>
+                <a href={proximoDesafio.link_url || "/jogos"}>{proximoDesafio.link_texto || "Ver Detalhes"} →</a>
               </div>
             </div>
-            <div className="fixture-bottom">
-              <span>
-                <i className="dot" />
-                Acompanhe em nossas redes sociais
-              </span>
-              <a href="#social">Seguir o Talismã →</a>
-            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <section className="categories shell" id="categorias">
         <div className="section-heading">

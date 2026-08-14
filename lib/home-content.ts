@@ -21,6 +21,23 @@ export type HomeEvento = {
   link_url: string;
 };
 
+export type HomeProximoDesafio = {
+  exibir: boolean;
+  tag: string;
+  titulo: string;
+  subtitulo: string;
+  fase_rodada: string;
+  local_cidade: string;
+  time_casa: string;
+  time_fora: string;
+  marca_fora: string;
+  escudo_fora_url: string;
+  imagem_fundo_url: string;
+  status_label: string;
+  link_texto: string;
+  link_url: string;
+};
+
 export const DEFAULT_HOME_DESTAQUE: HomeDestaque = {
   eyebrow: "CAMPOS GERAIS DO PARANÁ",
   titulo: "Mais que futsal.\nUm movimento.",
@@ -42,7 +59,24 @@ export const DEFAULT_HOME_EVENTO: HomeEvento = {
   time_fora: "Palermo FC",
   marca_fora: "PFC",
   link_texto: "Ver detalhes",
-  link_url: "#noticias",
+  link_url: "/jogos",
+};
+
+export const DEFAULT_HOME_PROXIMO_DESAFIO: HomeProximoDesafio = {
+  exibir: true,
+  tag: "PRÓXIMO DESAFIO",
+  titulo: "A caminhada\ncontinua.",
+  subtitulo: "Mais um grande confronto pela fase de grupos do Sul-Americano de Clubes.",
+  fase_rodada: "FASE DE GRUPOS · RODADA 2",
+  local_cidade: "ASSUNÇÃO, PARAGUAI",
+  time_casa: "SAF Talismã",
+  time_fora: "12 de Junio Futsal",
+  marca_fora: "12J",
+  escudo_fora_url: "",
+  imagem_fundo_url: "",
+  status_label: "EM BREVE",
+  link_texto: "Acompanhe a Associação",
+  link_url: "/jogos",
 };
 
 function toObject(value: unknown): Record<string, unknown> | null {
@@ -57,4 +91,9 @@ export function mergeDestaque(rows: Array<{ chave: string; valor: unknown }> | n
 export function mergeEvento(rows: Array<{ chave: string; valor: unknown }> | null | undefined): HomeEvento {
   const row = (rows ?? []).find((r) => r.chave === "home_evento");
   return { ...DEFAULT_HOME_EVENTO, ...(toObject(row?.valor) as Partial<HomeEvento>) };
+}
+
+export function mergeProximoDesafio(rows: Array<{ chave: string; valor: unknown }> | null | undefined): HomeProximoDesafio {
+  const row = (rows ?? []).find((r) => r.chave === "home_proximo_desafio");
+  return { ...DEFAULT_HOME_PROXIMO_DESAFIO, ...(toObject(row?.valor) as Partial<HomeProximoDesafio>) };
 }
