@@ -58,39 +58,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     let alive = true;
     const client = getAdminClient();
 
-    async function checkUserSession() {
-      const { data } = await client.auth.getSession();
-      if (!alive) return;
-      if (!data.session?.user) {
-        // Delay redirect slightly to ensure session is not mid-restore from localStorage
-        setTimeout(async () => {
-          if (!alive) return;
-          const { data: retryData } = await client.auth.getSession();
-          if (!retryData.session?.user) {
-            window.location.replace("/admin/login");
-          } else {
-            const { role, fullName } = await getMyRole(client);
-            if (!alive) return;
-            if (role === "none") {
-              setState({ status: "denied" });
-            } else {
-              setState({ status: "ready", role, fullName });
-            }
-          }
-        }, 350);
-        return;
-      }
-
+    async function checkAuth() {
       const { role, fullName } = await getMyRole(client);
       if (!alive) return;
-      if (role === "none") {
-        setState({ status: "denied" });
+      if (role !== "none") {
+        setState({ status: "ready", role, fullName });
         return;
       }
-      setState({ status: "ready", role, fullName });
+
+      // Se ainda não carregou, aguarda 500ms para sync da sessão do storage
+      setTimeout(async () => {
+        if (!alive) return;
+        const retry = await getMyRole(client);
+        if (retry.role !== "none") {
+          setState({ status: "ready", role: retry.role, fullName: retry.fullName });
+        } else {
+          window.location.replace("/admin/login");
+        }
+      }, 500);
     }
 
-    checkUserSession();
+    checkAuth();
 
     const { data: authListener } = client.auth.onAuthStateChange(async (event, session) => {
       if (!alive) return;
@@ -103,6 +91,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           setState({ status: "ready", role, fullName });
         }
       } else if (event === "SIGNED_OUT") {
+        try {
+          localStorage.removeItem("saf_admin_user_email");
+        } catch (_) {}
         window.location.replace("/admin/login");
       }
     });
@@ -136,7 +127,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div style={{ marginTop: 14 }}>
             <button
               className="btn btn-ghost"
-              onClick={() => getAdminClient().auth.signOut().then(() => window.location.replace("/admin/login"))}
+              onClick={() => {
+                try {
+                  localStorage.removeItem("saf_admin_user_email");
+                } catch (_) {}
+                getAdminClient().auth.signOut().then(() => window.location.replace("/admin/login"));
+              }}
             >
               Sair
             </button>
@@ -190,11 +186,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
             <button
               className="btn-logout"
-              onClick={() =>
+              onClick={() => {
+                try {
+                  localStorage.removeItem("saf_admin_user_email");
+                } catch (_) {}
                 getAdminClient()
                   .auth.signOut()
-                  .then(() => window.location.replace("/admin/login"))
-              }
+                  .then(() => window.location.replace("/admin/login"));
+              }}
             >
               Sair
             </button>

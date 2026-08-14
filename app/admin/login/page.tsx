@@ -9,54 +9,83 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    const client = getAdminClient();
-    client.auth.getSession().then(({ data }) => {
-      if (data.session?.user) {
-        window.location.href = "/admin";
-      }
-    });
+    try {
+      const client = getAdminClient();
+      client.auth.getSession().then(({ data }) => {
+        if (data.session?.user) {
+          window.location.href = "/admin";
+        }
+      }).catch(() => {});
+    } catch (_) {}
   }, []);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleLogin() {
+    if (!email || !password) {
+      setError("Por favor, preencha o e-mail e a senha.");
+      return;
+    }
+
     setError("");
     setLoading(true);
 
     try {
-      const client = getAdminClient();
-      const { data, error: signInError } = await client.auth.signInWithPassword({
-        email: email.trim(),
-        password,
+      // 1. Autenticação via API Route no servidor (sempre estável e à prova de falhas)
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
-      if (signInError) {
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || data.error) {
         setLoading(false);
-        setError(
-          signInError.message === "Invalid login credentials"
-            ? "E-mail ou senha incorretos."
-            : signInError.message,
-        );
+        setError(data.error || "E-mail ou senha incorretos.");
         return;
       }
 
+      // 2. Registra sessão no cliente Supabase e no localStorage
       if (data.session) {
-        // Redireciona para o painel principal
+        setSuccess(true);
+        try {
+          const client = getAdminClient();
+          await client.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          });
+        } catch (e) {
+          console.warn("Aviso ao definir sessão do client:", e);
+        }
+
+        try {
+          localStorage.setItem("saf_admin_user_email", email.trim().toLowerCase());
+        } catch (_) {}
+
+        // 3. Redireciona imediatamente para o painel
         window.location.href = "/admin";
       } else {
         setLoading(false);
-        setError("Não foi possível autenticar a sessão. Tente novamente.");
+        setError("Não foi possível iniciar a sessão. Tente novamente.");
       }
     } catch (err: any) {
       setLoading(false);
-      setError(err?.message || "Ocorreu um erro ao tentar entrar. Tente novamente.");
+      setError(err?.message || "Erro de conexão ao tentar autenticar. Tente novamente.");
     }
   }
 
   return (
-    <main className="login-wrap">
-      <form className="login-card" onSubmit={handleSubmit}>
+    <div className="login-wrap">
+      <form
+        className="login-card"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleLogin();
+        }}
+        action="#"
+      >
         <div className="login-brand-logo">
           <img src="/logo-saf.svg" alt="SAF Talismã" className="login-logo-img" />
         </div>
@@ -91,8 +120,14 @@ export default function AdminLoginPage() {
             disabled={loading}
           />
         </div>
-        <button type="submit" className="btn-login" disabled={loading}>
-          {loading ? "Autenticando…" : "Entrar no Painel"}
+
+        <button
+          type="button"
+          className="btn-login"
+          disabled={loading}
+          onClick={handleLogin}
+        >
+          {loading ? (success ? "Entrando no painel..." : "Autenticando…") : "Entrar no Painel"}
         </button>
 
         {error && (
@@ -101,6 +136,6 @@ export default function AdminLoginPage() {
           </div>
         )}
       </form>
-    </main>
+    </div>
   );
 }
