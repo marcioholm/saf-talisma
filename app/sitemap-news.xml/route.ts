@@ -3,11 +3,10 @@ import { supabaseUrl, supabaseAnonKey } from "../../lib/supabase";
 
 const SITE = "https://saftalisma.com.br";
 const PUBLICATION_NAME = "Associação Esportiva SAF/Talismã";
-const LANGUAGE = "pt-BR";
+const LANGUAGE = "pt";
 
-// Google News aceita notícias dos últimos 2 dias (recomendação oficial),
-// mas na prática indexa até 30 dias. Usamos 30 dias para maximizar cobertura.
-const NEWS_WINDOW_DAYS = 30;
+// Google News aceita notícias dos últimos 2 dias (48 horas).
+const NEWS_WINDOW_DAYS = 2;
 
 type NewsPost = {
   slug: string;

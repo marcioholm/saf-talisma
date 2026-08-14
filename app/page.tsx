@@ -12,6 +12,7 @@ import {
   type HomeEvento,
   type HomeProximoDesafio,
 } from "../lib/home-content";
+import { homeJsonLd } from "../lib/seo";
 import "./public.css";
 
 type Post = {
@@ -201,6 +202,10 @@ export default async function Home() {
 
   return (
     <main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: homeJsonLd() }}
+      />
       <SiteHeader active="/" />
 
       {evento.exibir && (

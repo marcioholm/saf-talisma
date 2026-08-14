@@ -2,9 +2,13 @@ import Link from "next/link";
 import { SiteHeader, SiteFooter } from "../../../components/site-shell";
 import { supabaseUrl, supabaseAnonKey, publicFileUrl } from "../../../lib/supabase";
 import "../../public.css";
+import { type Metadata } from "next";
+import { SITE, OG_IMAGE_DEFAULT, newsArticleJsonLd } from "../../../lib/seo";
+import { associationConfig } from "../../../lib/association-config";
 
 type Post = {
   id: string;
+  slug: string;
   categoria_id: string | null;
   titulo: string;
   subtitulo: string | null;
@@ -24,7 +28,7 @@ type Related = { id: string; slug: string; titulo: string; imagem_url: string | 
 async function getPostBySlug(slug: string): Promise<Post | null> {
   try {
     const res = await fetch(
-      `${supabaseUrl}/rest/v1/posts?select=id,categoria_id,titulo,subtitulo,resumo,conteudo,imagem_url,cover_alt,video_url,gallery,autor,published_at&slug=eq.${encodeURIComponent(slug)}&status=eq.published&limit=1`,
+      `${supabaseUrl}/rest/v1/posts?select=id,slug,categoria_id,titulo,subtitulo,resumo,conteudo,imagem_url,cover_alt,video_url,gallery,autor,published_at&slug=eq.${encodeURIComponent(slug)}&status=eq.published&limit=1`,
       {
         headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
         next: { revalidate: 60 },
@@ -75,6 +79,39 @@ async function getRelatedPosts(currentId: string, categoriaId?: string | null): 
   return [];
 }
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await getPostBySlug(slug);
+
+  if (!post) {
+    return { title: "Notícia não encontrada" };
+  }
+
+  const imageUrl = post.imagem_url ? publicFileUrl(post.imagem_url) : OG_IMAGE_DEFAULT;
+  const title = `${post.titulo} | ${associationConfig.name}`;
+  const description = post.resumo || post.titulo;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `${SITE}/noticias/${post.slug}` },
+    openGraph: {
+      title,
+      description,
+      url: `${SITE}/noticias/${post.slug}`,
+      type: "article",
+      publishedTime: post.published_at,
+      images: [{ url: imageUrl, alt: post.cover_alt || post.titulo }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [imageUrl],
+    },
+  };
+}
+
 export default async function NoticiaPage({
   params,
 }: {
@@ -113,6 +150,19 @@ export default async function NoticiaPage({
 
   return (
     <main className="page-body">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: newsArticleJsonLd({
+            titulo: post.titulo,
+            resumo: post.resumo,
+            published_at: post.published_at,
+            slug: post.slug,
+            autor: post.autor,
+            imagem_url: post.imagem_url ? publicFileUrl(post.imagem_url) : undefined,
+          }),
+        }}
+      />
       <SiteHeader active="/noticias" />
       <section className="page-hero">
         <div className="shell article-hero-copy">

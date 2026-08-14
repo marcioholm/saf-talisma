@@ -2,6 +2,8 @@ import Link from "next/link";
 import { SiteHeader, SiteFooter } from "../../components/site-shell";
 import { supabaseUrl, supabaseAnonKey, publicFileUrl } from "../../lib/supabase";
 import "../public.css";
+import { type Metadata } from "next";
+import { SITE, OG_IMAGE_DEFAULT, breadcrumbJsonLd } from "../../lib/seo";
 
 type Doc = {
   id: string;
@@ -102,6 +104,25 @@ async function getRecords(): Promise<RecordRow[]> {
   return [];
 }
 
+export const metadata: Metadata = {
+  title: "Portal de Transparência | SAF Talismã",
+  description: "Estatuto social, balanços patrimoniais, convênios, repasses e prestações de contas da Associação Esportiva SAF Talismã disponíveis para consulta pública.",
+  alternates: { canonical: `${SITE}/transparencia` },
+  openGraph: {
+    title: "Portal de Transparência | SAF Talismã",
+    description: "Estatuto social, balanços patrimoniais, convênios, repasses e prestações de contas da Associação Esportiva SAF Talismã disponíveis para consulta pública.",
+    url: `${SITE}/transparencia`,
+    type: "website",
+    images: [{ url: OG_IMAGE_DEFAULT }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Portal de Transparência | SAF Talismã",
+    description: "Estatuto social, balanços patrimoniais, convênios, repasses e prestações de contas da Associação Esportiva SAF Talismã disponíveis para consulta pública.",
+    images: [OG_IMAGE_DEFAULT],
+  },
+};
+
 export default async function TransparenciaPage({
   searchParams,
 }: {
@@ -121,6 +142,15 @@ export default async function TransparenciaPage({
 
   return (
     <main className="page-body">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: breadcrumbJsonLd([
+            { name: "Início", url: SITE },
+            { name: "Transparência", url: `${SITE}/transparencia` },
+          ]),
+        }}
+      />
       <SiteHeader active="/transparencia" />
       <section className="page-hero">
         <div className="shell">

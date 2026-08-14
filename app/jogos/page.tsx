@@ -2,6 +2,9 @@ import Link from "next/link";
 import { SiteHeader, SiteFooter } from "../../components/site-shell";
 import { supabaseUrl, supabaseAnonKey, publicFileUrl } from "../../lib/supabase";
 import "../public.css";
+import { type Metadata } from "next";
+import { SITE, OG_IMAGE_DEFAULT, breadcrumbJsonLd } from "../../lib/seo";
+import { associationConfig } from "../../lib/association-config";
 
 type SportCategory = { id: string; nome: string };
 type Game = {
@@ -136,7 +139,27 @@ function GameCard({ g }: { g: Game }) {
       </div>
     </div>
   );
+  return [];
 }
+
+export const metadata: Metadata = {
+  title: `Jogos e Resultados | ${associationConfig.name}`,
+  description: `Confira a agenda de próximos jogos e os resultados recentes das equipes da ${associationConfig.name}.`,
+  alternates: { canonical: `${SITE}/jogos` },
+  openGraph: {
+    title: `Jogos e Resultados | ${associationConfig.name}`,
+    description: `Confira a agenda de próximos jogos e os resultados recentes das equipes da ${associationConfig.name}.`,
+    url: `${SITE}/jogos`,
+    type: "website",
+    images: [{ url: OG_IMAGE_DEFAULT }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Jogos e Resultados | ${associationConfig.name}`,
+    description: `Confira a agenda de próximos jogos e os resultados recentes das equipes da ${associationConfig.name}.`,
+    images: [OG_IMAGE_DEFAULT],
+  },
+};
 
 export default async function JogosPage({
   searchParams,
@@ -154,6 +177,15 @@ export default async function JogosPage({
 
   return (
     <main className="page-body">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: breadcrumbJsonLd([
+            { name: "Início", url: SITE },
+            { name: "Jogos", url: `${SITE}/jogos` },
+          ]),
+        }}
+      />
       <SiteHeader active="/jogos" />
       <section className="page-hero">
         <div className="shell">

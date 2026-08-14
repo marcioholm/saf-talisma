@@ -3,6 +3,8 @@ import { supabaseUrl, supabaseAnonKey, publicFileUrl } from "../../lib/supabase"
 import { associationConfig } from "../../lib/association-config";
 import Link from "next/link";
 import "../public.css";
+import { type Metadata } from "next";
+import { SITE, OG_IMAGE_DEFAULT, breadcrumbJsonLd } from "../../lib/seo";
 
 type Content = { chave: string; conteudo: Record<string, unknown> };
 type SportCat = {
@@ -108,6 +110,25 @@ async function getTeams(): Promise<SportCat[]> {
   return [];
 }
 
+export const metadata: Metadata = {
+  title: `Sobre o Projeto | ${associationConfig.name}`,
+  description: `Conheça a história, missão, visão e valores da ${associationConfig.name}. Saiba mais sobre o nosso projeto esportivo.`,
+  alternates: { canonical: `${SITE}/sobre` },
+  openGraph: {
+    title: `Sobre o Projeto | ${associationConfig.name}`,
+    description: `Conheça a história, missão, visão e valores da ${associationConfig.name}.`,
+    url: `${SITE}/sobre`,
+    type: "website",
+    images: [{ url: OG_IMAGE_DEFAULT }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Sobre o Projeto | ${associationConfig.name}`,
+    description: `Conheça a história, missão, visão e valores da ${associationConfig.name}.`,
+    images: [OG_IMAGE_DEFAULT],
+  },
+};
+
 export default async function SobrePage() {
   const [content, { sobre, institucional }, teams] = await Promise.all([
     getContentMap(),
@@ -151,6 +172,15 @@ export default async function SobrePage() {
 
   return (
     <main className="page-body">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: breadcrumbJsonLd([
+            { name: "Início", url: SITE },
+            { name: "Sobre nós", url: `${SITE}/sobre` },
+          ]),
+        }}
+      />
       <SiteHeader active="/sobre" />
       <section className="page-hero">
         <div className="shell">

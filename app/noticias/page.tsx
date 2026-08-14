@@ -2,6 +2,9 @@ import Link from "next/link";
 import { supabaseUrl, supabaseAnonKey, publicFileUrl } from "../../lib/supabase";
 import { SiteHeader, SiteFooter } from "../../components/site-shell";
 import "../public.css";
+import { type Metadata } from "next";
+import { SITE, OG_IMAGE_DEFAULT, breadcrumbJsonLd } from "../../lib/seo";
+import { associationConfig } from "../../lib/association-config";
 
 type Category = { id: string; nome: string; slug: string };
 type Post = {
@@ -46,7 +49,27 @@ async function getPosts(catId?: string): Promise<Post[]> {
     console.error("Erro ao buscar notícias:", e);
   }
   return [];
+  return [];
 }
+
+export const metadata: Metadata = {
+  title: `Notícias | ${associationConfig.name}`,
+  description: `Acompanhe as últimas notícias, jogos e destaques da ${associationConfig.name}.`,
+  alternates: { canonical: `${SITE}/noticias` },
+  openGraph: {
+    title: `Notícias | ${associationConfig.name}`,
+    description: `Acompanhe as últimas notícias, jogos e destaques da ${associationConfig.name}.`,
+    url: `${SITE}/noticias`,
+    type: "website",
+    images: [{ url: OG_IMAGE_DEFAULT }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Notícias | ${associationConfig.name}`,
+    description: `Acompanhe as últimas notícias, jogos e destaques da ${associationConfig.name}.`,
+    images: [OG_IMAGE_DEFAULT],
+  },
+};
 
 export default async function NoticiasPage({
   searchParams,
@@ -62,6 +85,15 @@ export default async function NoticiasPage({
 
   return (
     <main className="page-body">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: breadcrumbJsonLd([
+            { name: "Início", url: SITE },
+            { name: "Notícias", url: `${SITE}/noticias` },
+          ]),
+        }}
+      />
       <SiteHeader active="/noticias" />
       <section className="page-hero">
         <div className="shell">

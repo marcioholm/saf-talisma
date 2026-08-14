@@ -4,6 +4,8 @@ import { associationConfig } from "../../../lib/association-config";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import "@/app/public.css";
+import { type Metadata } from "next";
+import { SITE, OG_IMAGE_DEFAULT, eventJsonLd } from "../../../lib/seo";
 
 type ChampionshipDetail = {
   id: string;
@@ -45,6 +47,38 @@ async function getChampionshipBySlug(slug: string): Promise<ChampionshipDetail |
   return null;
 }
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const c = await getChampionshipBySlug(slug);
+
+  if (!c || c.visibility === "draft" || c.visibility === "archived") {
+    return { title: "Campeonato não encontrado" };
+  }
+
+  const imageUrl = c.banner_path ? publicFileUrl(c.banner_path) : OG_IMAGE_DEFAULT;
+  const title = `${c.name} | Campeonatos | ${associationConfig.name}`;
+  const description = c.short_description || `Acompanhe o campeonato ${c.name} organizado pela ${associationConfig.name}.`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `${SITE}/campeonatos/${c.slug}` },
+    openGraph: {
+      title,
+      description,
+      url: `${SITE}/campeonatos/${c.slug}`,
+      type: "website",
+      images: [{ url: imageUrl, alt: c.name }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [imageUrl],
+    },
+  };
+}
+
 export default async function ChampionshipDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
   const c = await getChampionshipBySlug(resolvedParams.slug);
@@ -55,6 +89,18 @@ export default async function ChampionshipDetailPage({ params }: { params: Promi
 
   return (
     <main className="page-body">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: eventJsonLd({
+            name: c.name,
+            description: c.short_description,
+            url: `${SITE}/campeonatos/${c.slug}`,
+            location: c.location_name,
+            city: c.city,
+          }),
+        }}
+      />
       <SiteHeader active="/campeonatos" />
       <section className="page-hero">
         <div className="shell">

@@ -3,6 +3,8 @@ import { supabaseUrl, supabaseAnonKey, publicFileUrl } from "../../lib/supabase"
 import { associationConfig } from "../../lib/association-config";
 import Link from "next/link";
 import "../public.css";
+import { type Metadata } from "next";
+import { SITE, OG_IMAGE_DEFAULT, breadcrumbJsonLd } from "../../lib/seo";
 
 type Championship = {
   id: string;
@@ -42,11 +44,39 @@ const REG_STATUS_LABEL: Record<Championship["registration_status"], { label: str
   closed: { label: "Inscrições Encerradas", color: "#e57373" },
 };
 
+export const metadata: Metadata = {
+  title: `Campeonatos | ${associationConfig.name}`,
+  description: `Acompanhe os campeonatos e eventos esportivos organizados pela ${associationConfig.name}.`,
+  alternates: { canonical: `${SITE}/campeonatos` },
+  openGraph: {
+    title: `Campeonatos | ${associationConfig.name}`,
+    description: `Acompanhe os campeonatos e eventos esportivos organizados pela ${associationConfig.name}.`,
+    url: `${SITE}/campeonatos`,
+    type: "website",
+    images: [{ url: OG_IMAGE_DEFAULT }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Campeonatos | ${associationConfig.name}`,
+    description: `Acompanhe os campeonatos e eventos esportivos organizados pela ${associationConfig.name}.`,
+    images: [OG_IMAGE_DEFAULT],
+  },
+};
+
 export default async function PublicCampeonatosPage() {
   const championships = await getChampionships();
 
   return (
     <main className="page-body">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: breadcrumbJsonLd([
+            { name: "Início", url: SITE },
+            { name: "Campeonatos", url: `${SITE}/campeonatos` },
+          ]),
+        }}
+      />
       <SiteHeader active="/campeonatos" />
       <section className="page-hero">
         <div className="shell">

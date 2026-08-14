@@ -2,6 +2,8 @@ import { SiteHeader, SiteFooter } from "../../components/site-shell";
 import { supabaseUrl, supabaseAnonKey, publicFileUrl } from "../../lib/supabase";
 import { associationConfig } from "../../lib/association-config";
 import "../public.css";
+import { type Metadata } from "next";
+import { SITE, OG_IMAGE_DEFAULT, breadcrumbJsonLd } from "../../lib/seo";
 
 type BoardMember = {
   id: string;
@@ -38,13 +40,42 @@ async function getBoardMembers(): Promise<BoardMember[]> {
     console.error("Erro ao carregar diretoria:", e);
   }
   return [];
+  return [];
 }
+
+export const metadata: Metadata = {
+  title: `Diretoria | ${associationConfig.name}`,
+  description: `Conheça a diretoria e as pessoas responsáveis pela gestão e desenvolvimento da ${associationConfig.institutionalName}.`,
+  alternates: { canonical: `${SITE}/diretoria` },
+  openGraph: {
+    title: `Diretoria | ${associationConfig.name}`,
+    description: `Conheça a diretoria e as pessoas responsáveis pela gestão e desenvolvimento da ${associationConfig.institutionalName}.`,
+    url: `${SITE}/diretoria`,
+    type: "website",
+    images: [{ url: OG_IMAGE_DEFAULT }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Diretoria | ${associationConfig.name}`,
+    description: `Conheça a diretoria e as pessoas responsáveis pela gestão e desenvolvimento da ${associationConfig.institutionalName}.`,
+    images: [OG_IMAGE_DEFAULT],
+  },
+};
 
 export default async function DiretoriaPage() {
   const members = await getBoardMembers();
 
   return (
     <main className="page-body">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: breadcrumbJsonLd([
+            { name: "Início", url: SITE },
+            { name: "Diretoria", url: `${SITE}/diretoria` },
+          ]),
+        }}
+      />
       <SiteHeader active="/diretoria" />
       <section className="page-hero">
         <div className="shell">
