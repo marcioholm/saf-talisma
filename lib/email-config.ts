@@ -10,16 +10,16 @@ export const emailConfig = {
     textMuted: "#8a8a8a",
   },
   institutional: {
-    from: `${associationConfig.shortName} <contato@${associationConfig.domain}>`,
+    from: `Associação SAF/Talismã <contato@mail.saftalisma.com.br>`,
     replyTo: associationConfig.operationalEmail,
   },
   automatic: {
-    from: `${associationConfig.shortName} <noreply@${associationConfig.domain}>`,
+    from: `Associação SAF/Talismã <noreply@mail.saftalisma.com.br>`,
     replyTo: associationConfig.operationalEmail,
   },
   from: {
-    default: `${associationConfig.shortName} <noreply@${associationConfig.domain}>`,
-    contact: `${associationConfig.shortName} <contato@${associationConfig.domain}>`,
+    default: `Associação SAF/Talismã <contato@mail.saftalisma.com.br>`,
+    contact: `Associação SAF/Talismã <contato@mail.saftalisma.com.br>`,
   },
   replyTo: {
     default: associationConfig.operationalEmail,

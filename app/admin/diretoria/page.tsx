@@ -196,113 +196,153 @@ export default function AdminDiretoriaPage() {
 
       {message && <div className={`alert alert-${message.type}`}>{message.text}</div>}
 
-      <div className="admin-card">
+      <div className="admin-card" style={{ background: "#fff", padding: "24px", borderRadius: "8px", border: "1px solid #e0e0e0" }}>
         {members.length === 0 ? (
           <div className="empty-state" style={{ padding: "40px 20px", textAlign: "center" }}>
-            <p>Nenhum membro da diretoria cadastrado ainda.</p>
-            <button className="btn btn-magenta" onClick={handleOpenCreate} style={{ marginTop: 12 }}>
+            <p style={{ color: "#666", marginBottom: 16 }}>Nenhum membro da diretoria cadastrado ainda.</p>
+            <button className="btn btn-magenta" onClick={handleOpenCreate}>
               Cadastrar Primeiro Membro
             </button>
           </div>
         ) : (
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Foto</th>
-                <th>Nome</th>
-                <th>Cargo</th>
-                <th>Ordem</th>
-                <th>Ativo</th>
-                <th>Público</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map((m) => (
-                <tr key={m.id}>
-                  <td>
-                    {m.photo_path ? (
-                      <img
-                        src={publicFileUrl(m.photo_path)}
-                        alt={m.full_name}
-                        style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: "50%",
-                          background: "#eee",
-                          display: "grid",
-                          placeItems: "center",
-                          fontWeight: "bold",
-                          color: "#666",
-                        }}
-                      >
-                        {m.full_name.charAt(0)}
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <strong>{m.full_name}</strong>
-                  </td>
-                  <td>{m.role}</td>
-                  <td>{m.display_order}</td>
-                  <td>
-                    <button
-                      className={`badge ${m.is_active ? "badge-success" : "badge-inactive"}`}
-                      onClick={() => handleToggleStatus(m, "is_active")}
-                      title="Clique para alternar status"
-                      style={{ cursor: "pointer", border: "none" }}
-                    >
-                      {m.is_active ? "Sim" : "Não"}
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      className={`badge ${m.is_public ? "badge-success" : "badge-inactive"}`}
-                      onClick={() => handleToggleStatus(m, "is_public")}
-                      title="Clique para alternar visibilidade no site"
-                      style={{ cursor: "pointer", border: "none" }}
-                    >
-                      {m.is_public ? "Visível" : "Oculto"}
-                    </button>
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <button className="btn btn-sm btn-outline" onClick={() => handleOpenEdit(m)}>
-                        Editar
-                      </button>
-                      <button className="btn btn-sm btn-danger" onClick={() => handleDelete(m.id, m.full_name)}>
-                        Remover
-                      </button>
-                    </div>
-                  </td>
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th style={{ width: 60 }}>Foto</th>
+                  <th>Nome</th>
+                  <th>Cargo</th>
+                  <th style={{ width: 80 }}>Ordem</th>
+                  <th style={{ width: 80 }}>Ativo</th>
+                  <th style={{ width: 90 }}>Público</th>
+                  <th style={{ width: 140, textAlign: "right" }}>Ações</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {members.map((m) => (
+                  <tr key={m.id}>
+                    <td>
+                      {m.photo_path ? (
+                        <img
+                          src={publicFileUrl(m.photo_path)}
+                          alt={m.full_name}
+                          style={{ width: 42, height: 42, borderRadius: "50%", objectFit: "cover" }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: 42,
+                            height: 42,
+                            borderRadius: "50%",
+                            background: "#0d0d0d",
+                            color: "#61CE70",
+                            display: "grid",
+                            placeItems: "center",
+                            fontWeight: "bold",
+                            fontSize: "16px",
+                          }}
+                        >
+                          {m.full_name.charAt(0)}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      <strong>{m.full_name}</strong>
+                    </td>
+                    <td>{m.role}</td>
+                    <td>{m.display_order}</td>
+                    <td>
+                      <button
+                        className={`badge ${m.is_active ? "badge-success" : "badge-inactive"}`}
+                        onClick={() => handleToggleStatus(m, "is_active")}
+                        title="Clique para alternar status"
+                        style={{ cursor: "pointer", border: "none", padding: "4px 8px", borderRadius: "4px" }}
+                      >
+                        {m.is_active ? "SIM" : "NÃO"}
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        className={`badge ${m.is_public ? "badge-success" : "badge-inactive"}`}
+                        onClick={() => handleToggleStatus(m, "is_public")}
+                        title="Clique para alternar visibilidade no site"
+                        style={{ cursor: "pointer", border: "none", padding: "4px 8px", borderRadius: "4px" }}
+                      >
+                        {m.is_public ? "VISÍVEL" : "OCULTO"}
+                      </button>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <div style={{ display: "inline-flex", gap: "8px" }}>
+                        <button className="btn btn-sm btn-outline" onClick={() => handleOpenEdit(m)}>
+                          Editar
+                        </button>
+                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(m.id, m.full_name)}>
+                          Remover
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
       {showModal && (
-        <div className="modal-backdrop">
-          <div className="modal-content" style={{ maxWidth: 640 }}>
-            <div className="modal-header">
-              <h2>{editingId ? "Editar Membro da Diretoria" : "Novo Membro da Diretoria"}</h2>
-              <button className="modal-close" onClick={() => setShowModal(false)}>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "20px",
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowModal(false);
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "12px",
+              width: "100%",
+              maxWidth: "640px",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              padding: "28px",
+              boxShadow: "0 20px 40px rgba(0, 0, 0, 0.25)",
+              color: "#111",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", borderBottom: "1px solid #eee", paddingBottom: "12px" }}>
+              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "700" }}>
+                {editingId ? "Editar Membro da Diretoria" : "Novo Membro da Diretoria"}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#666", lineHeight: 1 }}
+              >
                 ×
               </button>
             </div>
-            <form onSubmit={handleSave}>
-              <div className="admin-form-grid">
-                <div className="field field-full">
-                  <label htmlFor="full_name">Nome Completo</label>
+
+            <form onSubmit={handleSave} className="admin-form" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div className="admin-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div className="field field-full" style={{ gridColumn: "1 / -1" }}>
+                  <label htmlFor="full_name" style={{ display: "block", marginBottom: 6, fontWeight: 600, fontSize: 13, textTransform: "uppercase" }}>
+                    Nome Completo
+                  </label>
                   <input
                     id="full_name"
                     type="text"
                     required
+                    style={{ width: "100%", padding: "10px 12px", border: "1px solid #ccc", borderRadius: "6px" }}
                     value={form.full_name}
                     onChange={(e) => setForm({ ...form, full_name: e.target.value })}
                     placeholder="Ex.: Maria Cicilia Rolim Lopes"
@@ -310,11 +350,14 @@ export default function AdminDiretoriaPage() {
                 </div>
 
                 <div className="field">
-                  <label htmlFor="role">Cargo Institucional</label>
+                  <label htmlFor="role" style={{ display: "block", marginBottom: 6, fontWeight: 600, fontSize: 13, textTransform: "uppercase" }}>
+                    Cargo Institucional
+                  </label>
                   <input
                     id="role"
                     type="text"
                     required
+                    style={{ width: "100%", padding: "10px 12px", border: "1px solid #ccc", borderRadius: "6px" }}
                     value={form.role}
                     onChange={(e) => setForm({ ...form, role: e.target.value })}
                     placeholder="Ex.: Presidente, Diretor Financeiro..."
@@ -322,31 +365,37 @@ export default function AdminDiretoriaPage() {
                 </div>
 
                 <div className="field">
-                  <label htmlFor="display_order">Ordem de Exibição</label>
+                  <label htmlFor="display_order" style={{ display: "block", marginBottom: 6, fontWeight: 600, fontSize: 13, textTransform: "uppercase" }}>
+                    Ordem de Exibição
+                  </label>
                   <input
                     id="display_order"
                     type="number"
+                    style={{ width: "100%", padding: "10px 12px", border: "1px solid #ccc", borderRadius: "6px" }}
                     value={form.display_order}
                     onChange={(e) => setForm({ ...form, display_order: Number(e.target.value) })}
                   />
                 </div>
 
-                <div className="field field-full">
-                  <label htmlFor="short_bio">Mini Biografia (Opcional)</label>
+                <div className="field field-full" style={{ gridColumn: "1 / -1" }}>
+                  <label htmlFor="short_bio" style={{ display: "block", marginBottom: 6, fontWeight: 600, fontSize: 13, textTransform: "uppercase" }}>
+                    Mini Biografia (Opcional)
+                  </label>
                   <textarea
                     id="short_bio"
                     rows={3}
+                    style={{ width: "100%", padding: "10px 12px", border: "1px solid #ccc", borderRadius: "6px" }}
                     value={form.short_bio || ""}
                     onChange={(e) => setForm({ ...form, short_bio: e.target.value })}
                     placeholder="Breve resumo da trajetória ou formação..."
                   />
                 </div>
 
-                <div className="field field-full">
-                  <label htmlFor="photo">
-                    Foto Oficial <small style={{ color: "#2e9c41", fontWeight: 700 }}>· Proporção recomendada: 1:1 (300 × 300 px ou 400 × 400 px quadrado)</small>
+                <div className="field field-full" style={{ gridColumn: "1 / -1" }}>
+                  <label htmlFor="photo" style={{ display: "block", marginBottom: 6, fontWeight: 600, fontSize: 13, textTransform: "uppercase" }}>
+                    Foto Oficial <small style={{ color: "#2e9c41", fontWeight: 700 }}>· Proporção recomendada: 1:1 (300 × 300 px ou 400 × 400 px)</small>
                   </label>
-                  <div className="file-field">
+                  <div className="file-field" style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     {form.photo_path && (
                       <img
                         src={publicFileUrl(form.photo_path)}
@@ -361,14 +410,19 @@ export default function AdminDiretoriaPage() {
                       onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
                     />
                   </div>
-                  <div className="hint">Dimensão ideal: 300 × 300 px (quadrada / retrato centralizado). Formatos: JPG, PNG, WebP.</div>
+                  <div className="hint" style={{ fontSize: 12, color: "#888", marginTop: 4 }}>
+                    Dimensão ideal: 300 × 300 px (quadrada / retrato centralizado). Formatos: JPG, PNG, WebP.
+                  </div>
                 </div>
 
                 <div className="field">
-                  <label htmlFor="instagram_url">Instagram (URL Opcional)</label>
+                  <label htmlFor="instagram_url" style={{ display: "block", marginBottom: 6, fontWeight: 600, fontSize: 13, textTransform: "uppercase" }}>
+                    Instagram (URL Opcional)
+                  </label>
                   <input
                     id="instagram_url"
                     type="url"
+                    style={{ width: "100%", padding: "10px 12px", border: "1px solid #ccc", borderRadius: "6px" }}
                     value={form.instagram_url || ""}
                     onChange={(e) => setForm({ ...form, instagram_url: e.target.value })}
                     placeholder="https://instagram.com/..."
@@ -376,18 +430,21 @@ export default function AdminDiretoriaPage() {
                 </div>
 
                 <div className="field">
-                  <label htmlFor="linkedin_url">LinkedIn (URL Opcional)</label>
+                  <label htmlFor="linkedin_url" style={{ display: "block", marginBottom: 6, fontWeight: 600, fontSize: 13, textTransform: "uppercase" }}>
+                    LinkedIn (URL Opcional)
+                  </label>
                   <input
                     id="linkedin_url"
                     type="url"
+                    style={{ width: "100%", padding: "10px 12px", border: "1px solid #ccc", borderRadius: "6px" }}
                     value={form.linkedin_url || ""}
                     onChange={(e) => setForm({ ...form, linkedin_url: e.target.value })}
                     placeholder="https://linkedin.com/in/..."
                   />
                 </div>
 
-                <div className="field" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16 }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                <div className="field" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontWeight: 600, fontSize: 14 }}>
                     <input
                       type="checkbox"
                       checked={form.is_active}
@@ -398,8 +455,8 @@ export default function AdminDiretoriaPage() {
                   </label>
                 </div>
 
-                <div className="field" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16 }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                <div className="field" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontWeight: 600, fontSize: 14 }}>
                     <input
                       type="checkbox"
                       checked={form.is_public}
@@ -411,7 +468,7 @@ export default function AdminDiretoriaPage() {
                 </div>
               </div>
 
-              <div className="modal-footer" style={{ marginTop: 24, display: "flex", justifyContent: "flex-end", gap: 12 }}>
+              <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end", gap: 12, borderTop: "1px solid #eee", paddingTop: "16px" }}>
                 <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>
                   Cancelar
                 </button>
