@@ -13,6 +13,35 @@ type SportCat = {
   staff: Array<{ nome: string; funcao: string | null }> | null;
 };
 
+type ConfigSobre = {
+  title?: string;
+  presentation?: string;
+  missao?: string;
+  visao?: string;
+  valores?: string;
+  sportsLocationName?: string;
+  sportsLocationStreet?: string;
+  sportsLocationNumber?: string;
+  sportsLocationCity?: string;
+  sportsLocationState?: string;
+  sportsLocationPostalCode?: string;
+  mapEmbedUrl?: string;
+  mapRouteUrl?: string;
+};
+
+type ConfigInstitucional = {
+  legalName?: string;
+  institutionalName?: string;
+  cnpj?: string;
+  region?: string;
+  legalAddress?: {
+    street?: string;
+    number?: string;
+    city?: string;
+    state?: string;
+  };
+};
+
 function text(value: unknown): string {
   return typeof value === "string" ? value : Array.isArray(value) ? value.join("\n") : "";
 }
@@ -27,7 +56,7 @@ async function getContentMap(): Promise<Record<string, Content>> {
       `${supabaseUrl}/rest/v1/institutional_content?select=chave,conteudo`,
       {
         headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
-        next: { revalidate: 60 },
+        next: { revalidate: 30 },
       }
     );
     if (res.ok) {
@@ -42,13 +71,34 @@ async function getContentMap(): Promise<Record<string, Content>> {
   return {};
 }
 
+async function getSiteSettings(): Promise<{ sobre: ConfigSobre; institucional: ConfigInstitucional }> {
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/site_settings?select=chave,valor&chave=in.(config_sobre,config_institucional)`,
+      {
+        headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
+        next: { revalidate: 30 },
+      }
+    );
+    if (res.ok) {
+      const rows = await res.json();
+      const sobreRow = rows?.find((r: any) => r.chave === "config_sobre")?.valor || {};
+      const instRow = rows?.find((r: any) => r.chave === "config_institucional")?.valor || {};
+      return { sobre: sobreRow, institucional: instRow };
+    }
+  } catch (e) {
+    console.error("Erro ao carregar configurações de sobre:", e);
+  }
+  return { sobre: {}, institucional: {} };
+}
+
 async function getTeams(): Promise<SportCat[]> {
   try {
     const res = await fetch(
       `${supabaseUrl}/rest/v1/sports_categories?select=id,nome,descricao&ativo=eq.true&order=ordem.asc`,
       {
         headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
-        next: { revalidate: 60 },
+        next: { revalidate: 30 },
       }
     );
     if (res.ok) return await res.json();
@@ -59,24 +109,52 @@ async function getTeams(): Promise<SportCat[]> {
 }
 
 export default async function SobrePage() {
-  const [content, teams] = await Promise.all([
+  const [content, { sobre, institucional }, teams] = await Promise.all([
     getContentMap(),
+    getSiteSettings(),
     getTeams(),
   ]);
 
-  const historia = text(content.historia?.conteudo?.historia ?? content.historia?.conteudo?.texto);
-  const missao = text(content.missao?.conteudo?.missao ?? content.missao?.conteudo?.texto);
-  const visao = text(content.visao?.conteudo?.visao ?? content.visao?.conteudo?.texto);
-  const valores = list(content.valores?.conteudo?.valores ?? content.valores?.conteudo?.lista ?? content.valores?.conteudo);
+  const presentation = sobre.presentation || text(content.historia?.conteudo?.historia ?? content.historia?.conteudo?.texto) || (
+    `A ${associationConfig.institutionalName} atua por meio do esporte, da formação e do desenvolvimento de atletas. Sediada em Arapoti, nos Campos Gerais do Paraná, a Associação desenvolve projetos, participa de competições e promove iniciativas que fortalecem o esporte e a comunidade.`
+  );
+
+  const missao = sobre.missao || text(content.missao?.conteudo?.missao ?? content.missao?.conteudo?.texto);
+  const visao = sobre.visao || text(content.visao?.conteudo?.visao ?? content.visao?.conteudo?.texto);
+  const valoresRaw = sobre.valores || content.valores?.conteudo?.valores || content.valores?.conteudo?.lista;
+  const valores = typeof valoresRaw === "string" ? valoresRaw.split(",").map((s) => s.trim()).filter(Boolean) : list(valoresRaw);
+
   const timeline = list(content.timeline?.conteudo?.timeline ?? content.timeline?.conteudo);
   const fotos = list(content.fotos?.conteudo?.fotos ?? content.fotos?.conteudo);
+
+  // Endereço legal
+  const legalName = institucional.legalName || associationConfig.legalName;
+  const cnpj = institucional.cnpj || associationConfig.cnpj;
+  const legalStreet = institucional.legalAddress?.street || associationConfig.legalAddress.street;
+  const legalNumber = institucional.legalAddress?.number || associationConfig.legalAddress.number;
+  const legalCity = institucional.legalAddress?.city || associationConfig.legalAddress.city;
+  const legalState = institucional.legalAddress?.state || associationConfig.legalAddress.state;
+  const legalRegion = institucional.region || associationConfig.region;
+
+  // Local esportivo
+  const sportsName = sobre.sportsLocationName || associationConfig.sportsLocation.name;
+  const sportsStreet = sobre.sportsLocationStreet || associationConfig.sportsLocation.street;
+  const sportsNumber = sobre.sportsLocationNumber || associationConfig.sportsLocation.number;
+  const sportsCity = sobre.sportsLocationCity || associationConfig.sportsLocation.city;
+  const sportsState = sobre.sportsLocationState || associationConfig.sportsLocation.state;
+  const sportsPostal = sobre.sportsLocationPostalCode || associationConfig.sportsLocation.postalCode;
+
+  // Montar URL de Embed do Google Maps 100% compatível com iframes
+  const chapelaoQuery = `${sportsName}, ${sportsStreet}, ${sportsNumber}, ${sportsCity}, ${sportsState}`;
+  const mapsEmbedSrc = `https://maps.google.com/maps?q=${encodeURIComponent(chapelaoQuery)}&t=&z=16&ie=UTF8&iwloc=&output=embed`;
+  const mapRouteUrl = sobre.mapRouteUrl || `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(chapelaoQuery)}`;
 
   return (
     <main className="page-body">
       <SiteHeader active="/sobre" />
       <section className="page-hero">
         <div className="shell">
-          <div className="eyebrow">{associationConfig.region.toUpperCase()}</div>
+          <div className="eyebrow">{legalRegion.toUpperCase()}</div>
           <h1>
             Sobre a <em>Associação</em>
           </h1>
@@ -93,18 +171,10 @@ export default async function SobrePage() {
               <h2>Nossa trajetória</h2>
             </div>
           </div>
-          {historia ? (
-            historia
-              .split(/\n\s*\n/)
-              .filter(Boolean)
-              .map((p, i) => <p key={i}>{p}</p>)
-          ) : (
-            <p>
-              A {associationConfig.institutionalName} atua por meio do esporte, da formação e do desenvolvimento de atletas.
-              Sediada em Arapoti, nos Campos Gerais do Paraná, a Associação desenvolve projetos, participa de competições
-              e promove iniciativas que fortalecem o esporte e a comunidade.
-            </p>
-          )}
+          {presentation
+            .split(/\n\s*\n/)
+            .filter(Boolean)
+            .map((p, i) => <p key={i}>{p}</p>)}
 
           {timeline.length > 0 && (
             <>
@@ -183,32 +253,32 @@ export default async function SobrePage() {
             {/* Endereço Legal */}
             <div style={{ background: "#fff", padding: "24px", borderRadius: "8px", border: "1px solid #e0e0e0" }}>
               <span style={{ color: "#61CE70", fontWeight: "bold", fontSize: "12px", textTransform: "uppercase", letterSpacing: "1px" }}>
-                🏢 Endereço Legal da Associação
+                Endereço Legal da Associação
               </span>
-              <h3 style={{ margin: "8px 0 12px 0", fontSize: "20px" }}>{associationConfig.legalName}</h3>
+              <h3 style={{ margin: "8px 0 12px 0", fontSize: "20px" }}>{legalName}</h3>
               <p style={{ margin: 0, fontSize: "14px", color: "#555", lineHeight: 1.6 }}>
-                <strong>CNPJ:</strong> {associationConfig.cnpj}<br />
-                <strong>Endereço:</strong> {associationConfig.legalAddress.street}, {associationConfig.legalAddress.number}<br />
-                <strong>Município:</strong> {associationConfig.legalAddress.city} – {associationConfig.legalAddress.state}<br />
-                <strong>Região:</strong> {associationConfig.region}
+                <strong>CNPJ:</strong> {cnpj}<br />
+                <strong>Endereço:</strong> {legalStreet}, {legalNumber}<br />
+                <strong>Município:</strong> {legalCity} – {legalState}<br />
+                <strong>Região:</strong> {legalRegion}
               </p>
             </div>
 
             {/* Local Esportivo (Chapelão) */}
             <div style={{ background: "#fff", padding: "24px", borderRadius: "8px", border: "1px solid #e0e0e0" }}>
               <span style={{ color: "#D200D2", fontWeight: "bold", fontSize: "12px", textTransform: "uppercase", letterSpacing: "1px" }}>
-                🏟️ Local das Atividades Esportivas
+                Local das Atividades Esportivas
               </span>
-              <h3 style={{ margin: "8px 0 12px 0", fontSize: "20px" }}>{associationConfig.sportsLocation.name}</h3>
+              <h3 style={{ margin: "8px 0 12px 0", fontSize: "20px" }}>{sportsName}</h3>
               <p style={{ margin: 0, fontSize: "14px", color: "#555", lineHeight: 1.6 }}>
-                <strong>Endereço:</strong> {associationConfig.sportsLocation.street}, {associationConfig.sportsLocation.number}<br />
-                <strong>Cidade:</strong> {associationConfig.sportsLocation.city} – {associationConfig.sportsLocation.state}<br />
-                <strong>CEP:</strong> {associationConfig.sportsLocation.postalCode}
+                <strong>Endereço:</strong> {sportsStreet}, {sportsNumber}<br />
+                <strong>Cidade:</strong> {sportsCity} – {sportsState}<br />
+                <strong>CEP:</strong> {sportsPostal}
               </p>
 
               <div style={{ marginTop: "16px" }}>
                 <a
-                  href={associationConfig.sportsLocation.mapRouteUrl}
+                  href={mapRouteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn btn-primary"
@@ -223,20 +293,20 @@ export default async function SobrePage() {
                     fontSize: "14px",
                   }}
                 >
-                  📍 Como chegar (Google Maps)
+                  Como chegar (Google Maps) →
                 </a>
               </div>
             </div>
           </div>
 
           {/* Mapa do Chapelão */}
-          <div style={{ marginTop: "32px", borderRadius: "8px", overflow: "hidden", border: "1px solid #ddd" }}>
+          <div style={{ marginTop: "32px", borderRadius: "8px", overflow: "hidden", border: "1px solid #ddd", background: "#f0f0f0", height: "400px" }}>
             <iframe
               title="Mapa do Ginásio de Esportes Chapelão"
-              src={associationConfig.sportsLocation.mapEmbedUrl}
+              src={mapsEmbedSrc}
               width="100%"
-              height="380"
-              style={{ border: 0 }}
+              height="100%"
+              style={{ border: 0, display: "block" }}
               allowFullScreen={false}
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
@@ -258,82 +328,22 @@ export default async function SobrePage() {
 
           <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginTop: "24px" }}>
             <a
+              href={`mailto:${associationConfig.email}`}
+              className="partner-button"
+              style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
+            >
+              Enviar E-mail
+            </a>
+            <a
               href={`https://wa.me/${associationConfig.phoneRaw}`}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ padding: "14px 24px", background: "#25D366", color: "#fff", borderRadius: "6px", textDecoration: "none", fontWeight: "bold" }}
+              className="partner-button"
+              style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "#25D366", borderColor: "#25D366" }}
             >
-              💬 Falar pelo WhatsApp
+              WhatsApp Oficial
             </a>
-            <a
-              href={`mailto:${associationConfig.email}`}
-              style={{ padding: "14px 24px", background: "#0d0d0d", color: "#fff", borderRadius: "6px", textDecoration: "none", fontWeight: "bold" }}
-            >
-              ✉️ Enviar um e-mail
-            </a>
-            {associationConfig.social.instagram && (
-              <a
-                href={associationConfig.social.instagram}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ padding: "14px 24px", background: "#E1306C", color: "#fff", borderRadius: "6px", textDecoration: "none", fontWeight: "bold" }}
-              >
-                📷 Ver Instagram
-              </a>
-            )}
-            {associationConfig.social.youtube && (
-              <a
-                href={associationConfig.social.youtube}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ padding: "14px 24px", background: "#FF0000", color: "#fff", borderRadius: "6px", textDecoration: "none", fontWeight: "bold" }}
-              >
-                ▶️ Ver YouTube
-              </a>
-            )}
           </div>
-        </div>
-      </section>
-
-      {/* Categorias de Base / Equipes */}
-      <section className="page-section">
-        <div className="shell">
-          <div className="section-heading">
-            <div>
-              <span>Nossas equipes</span>
-              <h2>Categorias de formação</h2>
-            </div>
-            <p>Desenvolvimento esportivo e humano em todas as fases da formação.</p>
-          </div>
-
-          {teams.length === 0 ? (
-            <div className="empty">
-              <strong>Elenco em divulgação</strong>
-            </div>
-          ) : (
-            teams.map((team) => (
-              <div key={team.id} className="team-block">
-                <h3>{team.nome}</h3>
-                {team.descricao && <p className="team-desc">{team.descricao}</p>}
-                {team.players && team.players.length > 0 && (
-                  <div className="roster">
-                    {team.players.map((p, i) => (
-                      <div key={i} className="player">
-                        {p.foto_url ? (
-                          <img src={publicFileUrl(p.foto_url)} alt={p.nome} />
-                        ) : (
-                          <div className="p-num">{p.numero ?? i + 1}</div>
-                        )}
-                        <strong>{p.nome}</strong>
-                        {p.apelido && <span>{p.apelido}</span>}
-                        {p.posicao && <span className="p-pos">{p.posicao}</span>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))
-          )}
         </div>
       </section>
 
