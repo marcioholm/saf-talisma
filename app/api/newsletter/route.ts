@@ -65,8 +65,9 @@ export async function POST(request: Request) {
 
     // Salvar inscrição no banco Supabase
     try {
-      const client = getAdminClient();
-      await client.from("newsletter_subscribers").upsert(
+      const { supabaseAdmin, supabase } = await import("@/lib/supabase");
+      const client = supabaseAdmin || supabase;
+      const { error: dbError } = await client.from("newsletter_subscribers").upsert(
         {
           email: cleanEmail,
           status: "active",
@@ -75,6 +76,9 @@ export async function POST(request: Request) {
         },
         { onConflict: "email" }
       );
+      if (dbError) {
+        console.warn("Aviso dbError ao salvar newsletter_subscribers:", dbError.message);
+      }
     } catch (dbErr) {
       console.warn("Aviso ao salvar newsletter_subscribers:", dbErr);
     }
