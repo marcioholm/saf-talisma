@@ -12,18 +12,28 @@ type BoardMember = {
   instagram_url: string | null;
   linkedin_url: string | null;
   display_order: number;
+  is_active?: boolean;
+  is_public?: boolean;
 };
 
 async function getBoardMembers(): Promise<BoardMember[]> {
   try {
     const res = await fetch(
-      `${supabaseUrl}/rest/v1/association_board_members?select=id,full_name,role,short_bio,photo_path,instagram_url,linkedin_url,display_order&is_active=eq.true&is_public=eq.true&archived_at=is.null&order=display_order.asc`,
+      `${supabaseUrl}/rest/v1/site_settings?select=valor&chave=eq.diretoria_membros`,
       {
         headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
-        next: { revalidate: 60 },
+        next: { revalidate: 30 },
       }
     );
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      const list = data?.[0]?.valor;
+      if (Array.isArray(list)) {
+        return list
+          .filter((m: BoardMember) => m.is_active !== false && m.is_public !== false)
+          .sort((a: BoardMember, b: BoardMember) => (a.display_order ?? 0) - (b.display_order ?? 0));
+      }
+    }
   } catch (e) {
     console.error("Erro ao carregar diretoria:", e);
   }
@@ -129,21 +139,38 @@ export default async function DiretoriaPage() {
                     </p>
                   )}
 
-                  {m.instagram_url && (
-                    <a
-                      href={m.instagram_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        fontSize: "12px",
-                        color: "#61CE70",
-                        textDecoration: "none",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      📷 Instagram
-                    </a>
-                  )}
+                  <div style={{ display: "flex", gap: "12px", marginTop: "auto", flexWrap: "wrap", justifyContent: "center" }}>
+                    {m.instagram_url && (
+                      <a
+                        href={m.instagram_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          fontSize: "12px",
+                          color: "#61CE70",
+                          textDecoration: "none",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Instagram →
+                      </a>
+                    )}
+                    {m.linkedin_url && (
+                      <a
+                        href={m.linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          fontSize: "12px",
+                          color: "#D200D2",
+                          textDecoration: "none",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        LinkedIn →
+                      </a>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

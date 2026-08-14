@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { getAdminClient, uploadFile } from "../../../lib/admin-client";
 import { publicFileUrl } from "../../../lib/supabase";
 
-type BoardMember = {
+export type BoardMember = {
   id: string;
   full_name: string;
   role: string;
@@ -50,26 +50,31 @@ export default function AdminDiretoriaPage() {
 
   async function loadMembers() {
     setLoading(true);
-    const client = getAdminClient();
-    const { data, error } = await client
-      .from("association_board_members")
-      .select("*")
-      .is("archived_at", null)
-      .order("display_order", { ascending: true });
+    try {
+      const client = getAdminClient();
+      const { data: row } = await client
+        .from("site_settings")
+        .select("valor")
+        .eq("chave", "diretoria_membros")
+        .maybeSingle();
 
-    if (error) {
-      // If table does not exist in local cache yet, gracefully set empty array
-      console.warn("Aviso ao carregar diretoria:", error.message);
+      if (row?.valor && Array.isArray(row.valor)) {
+        const sorted = (row.valor as BoardMember[]).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+        setMembers(sorted);
+      } else {
+        setMembers([]);
+      }
+    } catch (e: any) {
+      console.warn("Aviso ao carregar diretoria:", e?.message);
       setMembers([]);
-    } else {
-      setMembers((data as BoardMember[]) || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   function handleOpenCreate() {
     setEditingId(null);
-    setForm({ ...EMPTY_MEMBER, display_order: members.length });
+    setForm({ ...EMPTY_MEMBER, display_order: members.length + 1 });
     setPhotoFile(null);
     setShowModal(true);
   }
@@ -93,6 +98,23 @@ export default function AdminDiretoriaPage() {
     setShowModal(true);
   }
 
+  async function saveMembersList(newList: BoardMember[]) {
+    const client = getAdminClient();
+    const { data: session } = await client.auth.getSession();
+    const userId = session.session?.user.id;
+
+    const { error } = await client.from("site_settings").upsert(
+      {
+        chave: "diretoria_membros",
+        valor: newList,
+        updated_by: userId,
+      },
+      { onConflict: "chave" }
+    );
+    if (error) throw error;
+    setMembers(newList.sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)));
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setMessage(null);
@@ -105,62 +127,55 @@ export default function AdminDiretoriaPage() {
         photoPath = await uploadFile(client, "institutional", photoFile, "board");
       }
 
-      const payload = {
+      const updatedMemberData = {
         ...form,
         photo_path: photoPath,
-        updated_at: new Date().toISOString(),
       };
 
+      let updatedList: BoardMember[] = [];
+
       if (editingId) {
-        const { error } = await client
-          .from("association_board_members")
-          .update(payload)
-          .eq("id", editingId);
-        if (error) throw error;
-        setMessage({ type: "success", text: "Membro da diretoria atualizado." });
+        updatedList = members.map((m) =>
+          m.id === editingId ? { ...m, ...updatedMemberData } : m
+        );
+        await saveMembersList(updatedList);
+        setMessage({ type: "success", text: "Membro da diretoria atualizado com sucesso." });
       } else {
-        const { error } = await client
-          .from("association_board_members")
-          .insert([payload]);
-        if (error) throw error;
-        setMessage({ type: "success", text: "Novo membro cadastrado com sucesso." });
+        const newMember: BoardMember = {
+          ...updatedMemberData,
+          id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+        };
+        updatedList = [...members, newMember];
+        await saveMembersList(updatedList);
+        setMessage({ type: "success", text: "Novo membro da diretoria cadastrado com sucesso." });
       }
 
       setShowModal(false);
-      await loadMembers();
-    } catch (err) {
-      setMessage({ type: "error", text: err instanceof Error ? err.message : "Erro ao salvar." });
+    } catch (err: any) {
+      setMessage({ type: "error", text: err instanceof Error ? err.message : "Erro ao salvar diretoria." });
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleArchive(id: string, name: string) {
-    if (!confirm(`Deseja realmente arquivar o membro "${name}"?`)) return;
+  async function handleDelete(id: string, name: string) {
+    if (!confirm(`Deseja realmente remover "${name}" da diretoria?`)) return;
     try {
-      const client = getAdminClient();
-      const { error } = await client
-        .from("association_board_members")
-        .update({ archived_at: new Date().toISOString() })
-        .eq("id", id);
-      if (error) throw error;
-      setMessage({ type: "success", text: "Membro arquivado." });
-      await loadMembers();
-    } catch (err) {
-      setMessage({ type: "error", text: err instanceof Error ? err.message : "Erro ao arquivar." });
+      const updatedList = members.filter((m) => m.id !== id);
+      await saveMembersList(updatedList);
+      setMessage({ type: "success", text: `Membro "${name}" removido com sucesso.` });
+    } catch (err: any) {
+      setMessage({ type: "error", text: err instanceof Error ? err.message : "Erro ao remover membro." });
     }
   }
 
   async function handleToggleStatus(m: BoardMember, field: "is_active" | "is_public") {
     try {
-      const client = getAdminClient();
-      const { error } = await client
-        .from("association_board_members")
-        .update({ [field]: !m[field], updated_at: new Date().toISOString() })
-        .eq("id", m.id);
-      if (error) throw error;
-      await loadMembers();
-    } catch (err) {
+      const updatedList = members.map((item) =>
+        item.id === m.id ? { ...item, [field]: !item[field] } : item
+      );
+      await saveMembersList(updatedList);
+    } catch (err: any) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Erro ao atualizar status." });
     }
   }
@@ -183,7 +198,12 @@ export default function AdminDiretoriaPage() {
 
       <div className="admin-card">
         {members.length === 0 ? (
-          <div className="empty-state">Nenhum membro da diretoria cadastrado ainda.</div>
+          <div className="empty-state" style={{ padding: "40px 20px", textAlign: "center" }}>
+            <p>Nenhum membro da diretoria cadastrado ainda.</p>
+            <button className="btn btn-magenta" onClick={handleOpenCreate} style={{ marginTop: 12 }}>
+              Cadastrar Primeiro Membro
+            </button>
+          </div>
         ) : (
           <table className="admin-table">
             <thead>
@@ -205,19 +225,19 @@ export default function AdminDiretoriaPage() {
                       <img
                         src={publicFileUrl(m.photo_path)}
                         alt={m.full_name}
-                        style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }}
+                        style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }}
                       />
                     ) : (
                       <div
                         style={{
-                          width: 36,
-                          height: 36,
+                          width: 40,
+                          height: 40,
                           borderRadius: "50%",
-                          background: "#e0e0e0",
+                          background: "#eee",
                           display: "grid",
                           placeItems: "center",
-                          fontSize: 12,
                           fontWeight: "bold",
+                          color: "#666",
                         }}
                       >
                         {m.full_name.charAt(0)}
@@ -231,27 +251,31 @@ export default function AdminDiretoriaPage() {
                   <td>{m.display_order}</td>
                   <td>
                     <button
-                      className={`btn btn-xs ${m.is_active ? "btn-success" : "btn-ghost"}`}
+                      className={`badge ${m.is_active ? "badge-success" : "badge-inactive"}`}
                       onClick={() => handleToggleStatus(m, "is_active")}
+                      title="Clique para alternar status"
+                      style={{ cursor: "pointer", border: "none" }}
                     >
                       {m.is_active ? "Sim" : "Não"}
                     </button>
                   </td>
                   <td>
                     <button
-                      className={`btn btn-xs ${m.is_public ? "btn-success" : "btn-ghost"}`}
+                      className={`badge ${m.is_public ? "badge-success" : "badge-inactive"}`}
                       onClick={() => handleToggleStatus(m, "is_public")}
+                      title="Clique para alternar visibilidade no site"
+                      style={{ cursor: "pointer", border: "none" }}
                     >
-                      {m.is_public ? "Sim" : "Não"}
+                      {m.is_public ? "Visível" : "Oculto"}
                     </button>
                   </td>
                   <td>
-                    <div style={{ display: "flex", gap: "6px" }}>
-                      <button className="btn btn-xs btn-outline" onClick={() => handleOpenEdit(m)}>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button className="btn btn-sm btn-outline" onClick={() => handleOpenEdit(m)}>
                         Editar
                       </button>
-                      <button className="btn btn-xs btn-danger" onClick={() => handleArchive(m.id, m.full_name)}>
-                        Arquivar
+                      <button className="btn btn-sm btn-danger" onClick={() => handleDelete(m.id, m.full_name)}>
+                        Remover
                       </button>
                     </div>
                   </td>
@@ -263,30 +287,40 @@ export default function AdminDiretoriaPage() {
       </div>
 
       {showModal && (
-        <div className="admin-modal-backdrop">
-          <div className="admin-modal">
-            <h2>{editingId ? "Editar Membro da Diretoria" : "Novo Membro da Diretoria"}</h2>
-            <form onSubmit={handleSave} className="admin-form">
+        <div className="modal-backdrop">
+          <div className="modal-content" style={{ maxWidth: 640 }}>
+            <div className="modal-header">
+              <h2>{editingId ? "Editar Membro da Diretoria" : "Novo Membro da Diretoria"}</h2>
+              <button className="modal-close" onClick={() => setShowModal(false)}>
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleSave}>
               <div className="admin-form-grid">
                 <div className="field field-full">
                   <label htmlFor="full_name">Nome Completo</label>
                   <input
                     id="full_name"
+                    type="text"
+                    required
                     value={form.full_name}
                     onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                    required
+                    placeholder="Ex.: Maria Cicilia Rolim Lopes"
                   />
                 </div>
+
                 <div className="field">
                   <label htmlFor="role">Cargo Institucional</label>
                   <input
                     id="role"
+                    type="text"
+                    required
                     value={form.role}
                     onChange={(e) => setForm({ ...form, role: e.target.value })}
-                    placeholder="Ex: Presidente, Vice-Presidente..."
-                    required
+                    placeholder="Ex.: Presidente, Diretor Financeiro..."
                   />
                 </div>
+
                 <div className="field">
                   <label htmlFor="display_order">Ordem de Exibição</label>
                   <input
@@ -296,61 +330,93 @@ export default function AdminDiretoriaPage() {
                     onChange={(e) => setForm({ ...form, display_order: Number(e.target.value) })}
                   />
                 </div>
+
                 <div className="field field-full">
                   <label htmlFor="short_bio">Mini Biografia (Opcional)</label>
                   <textarea
                     id="short_bio"
-                    rows={2}
+                    rows={3}
                     value={form.short_bio || ""}
                     onChange={(e) => setForm({ ...form, short_bio: e.target.value })}
+                    placeholder="Breve resumo da trajetória ou formação..."
                   />
                 </div>
-                <div className="field">
-                  <label htmlFor="photo">Foto Oficial</label>
-                  <input
-                    id="photo"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
-                  />
+
+                <div className="field field-full">
+                  <label htmlFor="photo">
+                    Foto Oficial <small style={{ color: "#2e9c41", fontWeight: 700 }}>· Proporção recomendada: 1:1 (300 × 300 px ou 400 × 400 px quadrado)</small>
+                  </label>
+                  <div className="file-field">
+                    {form.photo_path && (
+                      <img
+                        src={publicFileUrl(form.photo_path)}
+                        alt=""
+                        style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover" }}
+                      />
+                    )}
+                    <input
+                      id="photo"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
+                    />
+                  </div>
+                  <div className="hint">Dimensão ideal: 300 × 300 px (quadrada / retrato centralizado). Formatos: JPG, PNG, WebP.</div>
                 </div>
+
                 <div className="field">
                   <label htmlFor="instagram_url">Instagram (URL Opcional)</label>
                   <input
                     id="instagram_url"
+                    type="url"
                     value={form.instagram_url || ""}
                     onChange={(e) => setForm({ ...form, instagram_url: e.target.value })}
+                    placeholder="https://instagram.com/..."
                   />
                 </div>
+
                 <div className="field">
-                  <label>
+                  <label htmlFor="linkedin_url">LinkedIn (URL Opcional)</label>
+                  <input
+                    id="linkedin_url"
+                    type="url"
+                    value={form.linkedin_url || ""}
+                    onChange={(e) => setForm({ ...form, linkedin_url: e.target.value })}
+                    placeholder="https://linkedin.com/in/..."
+                  />
+                </div>
+
+                <div className="field" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
                     <input
                       type="checkbox"
                       checked={form.is_active}
                       onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
                       style={{ width: "auto" }}
-                    />{" "}
+                    />
                     Ativo
                   </label>
                 </div>
-                <div className="field">
-                  <label>
+
+                <div className="field" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
                     <input
                       type="checkbox"
                       checked={form.is_public}
                       onChange={(e) => setForm({ ...form, is_public: e.target.checked })}
                       style={{ width: "auto" }}
-                    />{" "}
+                    />
                     Visível no site público
                   </label>
                 </div>
               </div>
-              <div className="form-actions" style={{ marginTop: 20 }}>
-                <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>
+
+              <div className="modal-footer" style={{ marginTop: 24, display: "flex", justifyContent: "flex-end", gap: 12 }}>
+                <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>
                   Cancelar
                 </button>
                 <button type="submit" className="btn btn-magenta" disabled={saving}>
-                  {saving ? "Salvando…" : "Salvar"}
+                  {saving ? "Salvando…" : "Salvar Membro"}
                 </button>
               </div>
             </form>
