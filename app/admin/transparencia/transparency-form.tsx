@@ -54,20 +54,30 @@ const EMPTY: FormState = {
 };
 
 const TIPOS: Array<[string, string]> = [
-  ["estatuto", "Estatuto Social / Regimento"],
-  ["balanco", "Balanço Patrimonial / Demonstrativo Financeiro"],
-  ["ata", "Ata de Eleição / Diretoria"],
-  ["prestacao_contas", "Prestação de Contas"],
+  ["prestacao_contas", "Prestação de Contas / Balanço Patrimonial"],
+  ["relatorio", "Relatório de Atividades / Estatuto / Atas"],
   ["convenio", "Convênio / Termo de Fomento"],
   ["repasse", "Repasse Público / Municipal"],
-  ["patrocinio", "Contrato de Patrocínio"],
+  ["patrocinio", "Contrato de Patrocínio / Apoio"],
   ["emenda_parlamentar", "Emenda Parlamentar"],
   ["edital", "Edital / Chamamento Público"],
   ["doacao", "Termo de Doação"],
-  ["relatorio", "Relatório de Atividades"],
   ["contrato", "Contrato Administrativo"],
-  ["termo_parceria", "Termo de Parceria"],
+  ["termo_parceria", "Termo de Parceria / Colaboração"],
 ];
+
+const VALID_DB_TIPOS = [
+  "convenio", "repasse", "patrocinio", "emenda_parlamentar",
+  "edital", "doacao", "prestacao_contas", "relatorio",
+  "contrato", "termo_parceria"
+];
+
+function sanitizeTipo(tipo: string): string {
+  if (VALID_DB_TIPOS.includes(tipo)) return tipo;
+  if (tipo === "estatuto" || tipo === "ata") return "relatorio";
+  if (tipo === "balanco") return "prestacao_contas";
+  return "prestacao_contas";
+}
 
 const SITUACOES: Array<[string, string]> = [
   ["aprovado", "Aprovado / Regular"],
@@ -232,7 +242,7 @@ export default function TransparencyForm({ id }: { id?: string }) {
         titulo: form.titulo.trim(),
         descricao: form.descricao.trim() || null,
         instituicao_origem: form.instituicao_origem.trim() || "Associação Esportiva SAF Talismã",
-        tipo: form.tipo,
+        tipo: sanitizeTipo(form.tipo),
         numero_processo: form.numero_processo.trim() || null,
         valor: form.valor === "" ? null : Number(form.valor),
         data_recebimento: form.data_recebimento || null,
