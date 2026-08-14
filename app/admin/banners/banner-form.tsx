@@ -209,17 +209,27 @@ export default function BannerForm({ id }: { id?: string }) {
           </label>
         </div>
         <div className="field field-full">
-          <label htmlFor="img_desktop">Imagem desktop (wide)</label>
+          <label htmlFor="img_desktop">
+            Imagem desktop (wide) <small style={{ color: "#2e9c41", fontWeight: 700 }}>· Proporção recomendada: 1920 × 600 px (panorâmica)</small>
+          </label>
           <div className="file-field">
             {desktopPreview && <img src={img(desktopPreview)} alt="" className="thumb" style={{ width: 260, height: 120 }} />}
             <input id="img_desktop" type="file" accept="image/*" onChange={(e) => handleImage("desktop", e.target.files?.[0] ?? null)} />
+            <div className="hint" style={{ marginTop: 6, fontSize: 12, color: "#888" }}>
+              Resolução ideal: <strong>1920 × 600 px</strong> (ou proporção ~3:1). Mantenha o conteúdo principal e textos no terço central.
+            </div>
           </div>
         </div>
         <div className="field field-full">
-          <label htmlFor="img_mobile">Imagem mobile (vertical)</label>
+          <label htmlFor="img_mobile">
+            Imagem mobile (vertical) <small style={{ color: "#2e9c41", fontWeight: 700 }}>· Proporção recomendada: 1080 × 1350 px ou 1080 × 1080 px</small>
+          </label>
           <div className="file-field">
             {mobilePreview && <img src={img(mobilePreview)} alt="" className="thumb" />}
             <input id="img_mobile" type="file" accept="image/*" onChange={(e) => handleImage("mobile", e.target.files?.[0] ?? null)} />
+            <div className="hint" style={{ marginTop: 6, fontSize: 12, color: "#888" }}>
+              Resolução ideal: <strong>1080 × 1350 px</strong> (proporção 4:5 vertical) ou <strong>1080 × 1080 px</strong> (quadrada).
+            </div>
           </div>
         </div>
         <div className="field field-full">

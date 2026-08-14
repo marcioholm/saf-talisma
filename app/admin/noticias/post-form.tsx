@@ -291,7 +291,9 @@ export default function PostForm({ id }: { id?: string }) {
           </label>
         </div>
         <div className="field field-full">
-          <label htmlFor="cover">Imagem de capa</label>
+          <label htmlFor="cover">
+            Imagem de capa <small style={{ color: "#2e9c41", fontWeight: 700 }}>· Proporção recomendada: 16:9 (1200 × 675 px ou 1920 × 1080 px)</small>
+          </label>
           <div className="file-field">
             {currentCover && <img src={currentCover.startsWith("http") ? currentCover : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${currentCover}`} alt="" className="thumb" />}
             <input
@@ -300,7 +302,10 @@ export default function PostForm({ id }: { id?: string }) {
               accept="image/*"
               onChange={(e) => handleCover(e.target.files?.[0] ?? null)}
             />
-            <div className="hint mono">{coverPath || "Nenhuma imagem enviada."}</div>
+            <div className="hint" style={{ marginTop: 6, fontSize: 12, color: "#888", lineHeight: 1.5 }}>
+              <strong>Dica de Dimensão:</strong> Para que a imagem não fique cortada na Home, na lista de notícias e no cabeçalho da matéria, envie imagens horizontais na proporção <strong>16:9</strong> (resolução ideal: <strong>1200 × 675 px</strong> ou <strong>1920 × 1080 px</strong>) mantendo o assunto principal no centro. Formatos: JPG, PNG ou WebP.
+            </div>
+            <div className="hint mono" style={{ marginTop: 4 }}>{coverPath || "Nenhuma imagem enviada."}</div>
           </div>
         </div>
         <div className="field">
