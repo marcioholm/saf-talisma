@@ -738,7 +738,7 @@
 }
 
 .rich-text-content p {
-  margin-bottom: 1.5em;
+  margin-bottom: 1em;
   color: #333;
   line-height: 1.8;
   font-size: 17px;
@@ -787,6 +787,14 @@
 .rich-text-content ol {
   margin-bottom: 1.5em;
   padding-left: 2em;
+}
+
+.rich-text-content ul {
+  list-style-type: disc;
+}
+
+.rich-text-content ol {
+  list-style-type: decimal;
 }
 
 .rich-text-content li {
