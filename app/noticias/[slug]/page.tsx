@@ -139,10 +139,18 @@ export default async function NoticiaPage({
   }
 
   const related = await getRelatedPosts(post.id, post.categoria_id);
-  const paragraphs = (post.conteudo || "")
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter(Boolean);
+  const contentHtml = (() => {
+    let html = post.conteudo || "";
+    const isHtml = /<[a-z][\s\S]*>/i.test(html);
+    if (!isHtml) {
+      html = html
+        .split(/\n\s*\n/)
+        .map((p) => `<p>${p.trim()}</p>`)
+        .join("");
+    }
+    return html;
+  })();
+
   const gallery = Array.isArray(post.gallery) ? post.gallery.filter(Boolean) : [];
   const videoId = (post.video_url || "").match(
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)/,
@@ -202,11 +210,9 @@ export default async function NoticiaPage({
         <div className="shell">
           <div className="article-body">
             {post.resumo && (
-              <p style={{ fontWeight: 600, color: "#1a1a1a", fontSize: 17.5 }}>{post.resumo}</p>
+              <p style={{ fontWeight: 600, color: "#1a1a1a", fontSize: 17.5, marginBottom: 24 }}>{post.resumo}</p>
             )}
-            {paragraphs.map((p, i) => (
-              <p key={i}>{p}</p>
-            ))}
+            <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: contentHtml }} />
 
             {videoId && (
               <div className="article-video">

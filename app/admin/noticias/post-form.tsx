@@ -11,6 +11,7 @@ import {
   STATUS_LABEL,
   type Status,
 } from "../../../lib/admin-client";
+import Editor from "./editor";
 
 type Category = { id: string; nome: string };
 
@@ -237,12 +238,9 @@ export default function PostForm({ id }: { id?: string }) {
         </div>
         <div className="field field-full">
           <label htmlFor="conteudo">Conteúdo</label>
-          <textarea
-            id="conteudo"
-            className="textarea-tall"
+          <Editor
             value={form.conteudo}
-            onChange={(e) => set("conteudo", e.target.value)}
-            placeholder="Texto da notícia…"
+            onChange={(val) => set("conteudo", val)}
           />
         </div>
         <div className="field">
