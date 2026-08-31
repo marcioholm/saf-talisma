@@ -800,3 +800,12 @@
 .rich-text-content li {
   margin-bottom: 0.5em;
 }
+
+.rich-text-content p,
+.rich-text-content span,
+.rich-text-content div {
+  white-space: normal !important;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
