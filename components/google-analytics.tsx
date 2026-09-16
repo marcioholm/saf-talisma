@@ -1,9 +1,32 @@
 "use client";
 
 import Script from "next/script";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
+
+declare global {
+  interface Window {
+    gtag: (...args: any[]) => void;
+    dataLayer: any[];
+  }
+}
 
 export default function GoogleAnalytics({ gaId }: { gaId: string }) {
-  if (!gaId) return null;
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (pathname?.startsWith("/admin")) return;
+
+    if (pathname && window.gtag) {
+      const url = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : "");
+      window.gtag("config", gaId, {
+        page_path: url,
+      });
+    }
+  }, [pathname, searchParams, gaId]);
+
+  if (!gaId || pathname?.startsWith("/admin")) return null;
 
   return (
     <>
