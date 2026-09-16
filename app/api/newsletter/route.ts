@@ -70,9 +70,7 @@ export async function POST(request: Request) {
       const { error: dbError } = await client.from("newsletter_subscribers").upsert(
         {
           email: cleanEmail,
-          status: "active",
-          confirmed_at: new Date().toISOString(),
-          ip_address: ip,
+          ativo: true,
         },
         { onConflict: "email" }
       );
