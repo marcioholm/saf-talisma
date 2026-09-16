@@ -176,7 +176,10 @@ export default function PostForm({ id }: { id?: string }) {
       if (form.status === "published" && initialStatusRef.current !== "published" && savedId) {
         fetch("/api/newsletter/notify", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": session.session?.access_token ? `Bearer ${session.session.access_token}` : ""
+          },
           body: JSON.stringify({ postId: savedId }),
         }).catch(() => {});
       }
