@@ -101,7 +101,7 @@ export default function PostForm({ id }: { id?: string }) {
             cover_alt: data.cover_alt ?? "",
             video_url: data.video_url ?? "",
             gallery: JSON.stringify(data.gallery ?? [], null, 2),
-            scheduled_at: toLocalInput(data.scheduled_at),
+            scheduled_at: toLocalInput(data.scheduled_at || data.published_at),
           });
           initialStatusRef.current = data.status ?? "draft";
           setCurrentCover(data.imagem_url ?? "");
@@ -134,9 +134,13 @@ export default function PostForm({ id }: { id?: string }) {
       const slug = form.slug || slugify(form.titulo);
       if (!slug) throw new Error("Informe um título ou slug.");
 
-      let publishedAt: string | null = null;
+      let publishedAt: string | undefined | null = undefined;
       if (form.status === "published") {
-        publishedAt = toIsoLocal(new Date().toISOString());
+        if (form.scheduled_at) {
+          publishedAt = toIsoLocal(form.scheduled_at);
+        } else if (!isEdit || initialStatusRef.current !== "published") {
+          publishedAt = toIsoLocal(new Date().toISOString());
+        }
       }
 
       const payload = {
@@ -153,13 +157,8 @@ export default function PostForm({ id }: { id?: string }) {
         video_url: form.video_url.trim() || null,
         gallery,
         imagem_url: coverPath || null,
-        scheduled_at: form.status === "scheduled" ? toIsoLocal(form.scheduled_at) : null,
-        published_at:
-          form.status === "published"
-            ? publishedAt
-            : form.status === "scheduled"
-              ? null
-              : undefined,
+        scheduled_at: form.status === "scheduled" && form.scheduled_at ? toIsoLocal(form.scheduled_at) : null,
+        ...(publishedAt !== undefined && { published_at: form.status === "scheduled" ? null : publishedAt }),
         updated_by: userId,
       };
 
@@ -269,7 +268,7 @@ export default function PostForm({ id }: { id?: string }) {
           <input id="autor" value={form.autor} onChange={(e) => set("autor", e.target.value)} />
         </div>
         <div className="field">
-          <label htmlFor="scheduled_at">Agendar publicação</label>
+          <label htmlFor="scheduled_at">Data de publicação / Agendamento</label>
           <input
             id="scheduled_at"
             type="datetime-local"
