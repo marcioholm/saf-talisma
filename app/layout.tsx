@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { associationConfig } from "../lib/association-config";
+import GoogleAnalytics from "../components/google-analytics";
 import "./globals.css";
 
 const SITE = "https://saftalisma.com.br";
@@ -80,7 +81,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <link rel="icon" href="/favicon.svg" />
         <link rel="apple-touch-icon" href="/logo-saf.svg" />
       </head>
-      <body>{children}</body>
+      <body>
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || ""} />
+        {children}
+      </body>
     </html>
   );
 }
